@@ -70,13 +70,13 @@ ENV/
 .ipynb_checkpoints
 
 # Large data files and uploads
-backend/data/uploads/
-backend/data/extracted_frames/
-backend/data/analysis_output/
-backend/data/analysed_incidents.json
-backend/data/comprehensive_analysis.json
-backend/comprehensive_analysis.json
-backend/events_output.json
+# backend/data/uploads/
+# backend/data/extracted_frames/
+# backend/data/analysis_output/
+# backend/data/analysed_incidents.json
+# backend/data/comprehensive_analysis.json
+# backend/comprehensive_analysis.json
+# backend/events_output.json
 
 # ===========================================
 # FLUTTER

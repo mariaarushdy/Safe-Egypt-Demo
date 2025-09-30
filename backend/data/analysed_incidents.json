@@ -1,0 +1,717 @@
+[
+  {
+    "category": "Violence",
+    "title": "Verbal Harassment Incident",
+    "description": "A man records himself while verbally harassing another person. He is shouting profanities and accusing the individual of hitting him.",
+    "severity": "Low",
+    "verified": "Real",
+    "violence_type": "harassment",
+    "weapon": null,
+    "site_description": "The incident occurs inside a vehicle on a public road during daylight. The background shows an outdoor area but specific details are unclear.",
+    "number_of_people": 2,
+    "description_of_people": "One visible person is a middle-aged, balding man with white hair, wearing a blue and yellow patterned shirt. The other individual is off-camera.",
+    "detailed_description_for_the_incident": "A man inside a car is engaged in a heated verbal altercation with another person who is not visible. He repeatedly shouts, using profane language, accusing the other individual of hitting him and questioning their actions.",
+    "accident_type": null,
+    "vehicles_machines_involved": null,
+    "utility_type": null,
+    "extent_of_impact": null,
+    "duration": null,
+    "illegal_type": null,
+    "items_involved": null,
+    "detected_events": [
+      {
+        "event_type": "person",
+        "first_second": 0.0,
+        "confidence": 0.9,
+        "description": "A clear, close-up view of a person's face is visible.",
+        "suggested_frame_seconds": 3.487,
+        "weapon_type": null,
+        "person_attributes": null,
+        "image_path": "data/extracted_frames\\scenes\\scene_event_1_at_3.487s.jpg",
+        "detected_elements_paths": []
+      }
+    ],
+    "incident_id": "00eff01b-0e65-4a7b-b616-4f6700901853",
+    "timestamp": "2025-09-28T19:09:08.783469",
+    "status": "accepted",
+    "location": {
+      "address": "5, شارع محمد فريد, محدرة, مرسى مطروح, مطروح, 51511, مصر",
+      "latitude": 31.3521932,
+      "longitude": 27.2506133
+    },
+    "real_files": [
+      "data\\uploads\\videos\\c449314f-3364-4a7a-9018-b25fc917466a.mp4"
+    ]
+  },
+  {
+    "category": "Accident",
+    "title": "Forced Entry Incident",
+    "description": "An individual is seen forcefully breaking into a property. A loud crashing sound is heard as the person gains entry.",
+    "severity": "High",
+    "verified": "Real",
+    "violence_type": "suspicious activity",
+    "weapon": "none",
+    "site_description": "The incident occurs at what appears to be the doorway of a residence or room, in an indoor setting.",
+    "number_of_people": 1,
+    "description_of_people": "One individual is briefly visible, wearing a light-colored shirt. The video quality is too poor to determine other features.",
+    "detailed_description_for_the_incident": "The video shows a person using force to break through a door. A loud crashing noise is audible, suggesting the door is being kicked or broken down, after which the person enters.",
+    "accident_type": null,
+    "vehicles_machines_involved": null,
+    "utility_type": null,
+    "extent_of_impact": null,
+    "duration": null,
+    "illegal_type": null,
+    "items_involved": null,
+    "detected_events": [
+      {
+        "event_type": "person",
+        "first_second": 4.65,
+        "confidence": 0.5,
+        "description": "A person wearing a light-colored shirt appears in the frame.",
+        "suggested_frame_seconds": 6.21,
+        "weapon_type": null,
+        "person_attributes": null,
+        "image_path": "data/extracted_frames\\scenes\\scene_event_1_at_6.210s.jpg",
+        "detected_elements_paths": []
+      },
+      {
+        "event_type": "weapon",
+        "first_second": 5.85,
+        "confidence": 0.6,
+        "description": "The person is seen holding a long object that resembles a rifle or shotgun.",
+        "suggested_frame_seconds": 6.21,
+        "weapon_type": null,
+        "person_attributes": null,
+        "image_path": "data/extracted_frames\\scenes\\scene_event_2_at_6.210s.jpg",
+        "detected_elements_paths": []
+      }
+    ],
+    "incident_id": "0312907c-74e2-460a-b002-6b001d6e570b",
+    "timestamp": "2025-09-28T19:20:32.410359",
+    "status": "pending",
+    "location": {
+      "address": "5, شارع محمد فريد, محدرة, مرسى مطروح, مطروح, 51511, مصر",
+      "latitude": 31.3521956,
+      "longitude": 27.2506091
+    },
+    "real_files": [
+      "data\\uploads\\videos\\c449314f-3364-4a7a-9018-b25fc917466a.mp4"
+    ]
+  },
+  {
+    "category": "Illegal Activity",
+    "title": "Violent Street Fight",
+    "description": "A violent brawl broke out between several young men in the middle of a crowded street. The individuals were seen chasing and physically assaulting each other, causing a public disturbance.",
+    "severity": "High",
+    "verified": "Real",
+    "violence_type": "assaults",
+    "weapon": "Sticks/batons",
+    "site_description": "A crowded commercial street in an urban area, lined with shops, apartment buildings, and a gas station, with significant pedestrian and auto-rickshaw traffic.",
+    "number_of_people": 8,
+    "description_of_people": "Multiple young men, some are shirtless wearing dark shorts, while others are in casual t-shirts and pants. A large crowd of onlookers is also present.",
+    "detailed_description_for_the_incident": "The video captures a chaotic street fight involving several young men in a busy urban setting. The men, some of whom are shirtless, are seen running through traffic, chasing, and physically attacking each other. One individual inside an auto-rickshaw appears to be wielding a long stick, while others engage in hand-to-hand combat amidst onlookers and vehicles, creating a dangerous and disruptive scene.",
+    "accident_type": null,
+    "vehicles_machines_involved": null,
+    "utility_type": null,
+    "extent_of_impact": null,
+    "duration": null,
+    "illegal_type": null,
+    "items_involved": null,
+    "detected_events": [
+      {
+        "event_type": "person",
+        "first_second": 1.411,
+        "confidence": 0.9,
+        "description": "A shirtless person runs aggressively into the street, escalating the confrontation. Face is partially visible.",
+        "suggested_frame_seconds": 1.411,
+        "weapon_type": "knife/machete",
+        "person_attributes": "A man wearing a white t-shirt and dark pants.",
+        "image_path": "data/extracted_frames\\scenes\\scene_event_1_at_1.411s.jpg",
+        "detected_elements_paths": [
+          "data/extracted_frames\\detections\\event_1_at_1.411s_person_det1_conf0.95.jpg",
+          "data/extracted_frames\\detections\\event_1_at_1.411s_person_det2_conf0.88.jpg",
+          "data/extracted_frames\\detections\\event_1_at_1.411s_person_det3_conf0.91.jpg",
+          "data/extracted_frames\\detections\\event_1_at_1.411s_person_det4_conf0.85.jpg",
+          "data/extracted_frames\\detections\\event_1_at_1.411s_weapon_det5_conf0.92.jpg"
+        ]
+      },
+      {
+        "event_type": "weapon",
+        "first_second": 2.973,
+        "confidence": 0.95,
+        "description": "A person sitting inside a blue auto-rickshaw is clearly seen holding a long bladed weapon, possibly a machete.",
+        "suggested_frame_seconds": 2.973,
+        "weapon_type": "knife/machete",
+        "person_attributes": "A young person in a striped shirt sitting inside the driver's side of the tuk-tuk.",
+        "image_path": "data/extracted_frames\\scenes\\scene_event_2_at_2.973s.jpg",
+        "detected_elements_paths": [
+          "data/extracted_frames\\detections\\event_2_at_2.973s_person_det1_conf0.90.jpg",
+          "data/extracted_frames\\detections\\event_2_at_2.973s_person_det2_conf0.85.jpg",
+          "data/extracted_frames\\detections\\event_2_at_2.973s_weapon_det3_conf0.75.jpg"
+        ]
+      },
+      {
+        "event_type": "weapon",
+        "first_second": 17.534,
+        "confidence": 0.92,
+        "description": "A person in a tan shirt is seen in the center of the crowd raising a long, shiny bladed weapon.",
+        "suggested_frame_seconds": 17.534,
+        "weapon_type": "knife/machete",
+        "person_attributes": "A woman's face on a lit sign on a building facade.",
+        "image_path": "data/extracted_frames\\scenes\\scene_event_3_at_17.534s.jpg",
+        "detected_elements_paths": [
+          "data/extracted_frames\\detections\\event_3_at_17.534s_person_det1_conf0.93.jpg",
+          "data/extracted_frames\\detections\\event_3_at_17.534s_weapon_det2_conf0.95.jpg",
+          "data/extracted_frames\\detections\\event_3_at_17.534s_person_det3_conf0.88.jpg",
+          "data/extracted_frames\\detections\\event_3_at_17.534s_person_det4_conf0.91.jpg",
+          "data/extracted_frames\\detections\\event_3_at_17.534s_person_det5_conf0.85.jpg",
+          "data/extracted_frames\\detections\\event_3_at_17.534s_person_det6_conf0.82.jpg",
+          "data/extracted_frames\\detections\\event_3_at_17.534s_person_det7_conf0.90.jpg",
+          "data/extracted_frames\\detections\\event_3_at_17.534s_person_det8_conf0.89.jpg"
+        ]
+      },
+      {
+        "event_type": "person",
+        "first_second": 21.841,
+        "confidence": 0.9,
+        "description": "Clear frontal view of a person in a grey t-shirt and white shorts involved in the altercation.",
+        "suggested_frame_seconds": 21.841,
+        "weapon_type": null,
+        "person_attributes": "A man wearing a white collared shirt in the background.",
+        "image_path": "data/extracted_frames\\scenes\\scene_event_4_at_21.841s.jpg",
+        "detected_elements_paths": [
+          "data/extracted_frames\\detections\\event_4_at_21.841s_person_det1_conf0.98.jpg",
+          "data/extracted_frames\\detections\\event_4_at_21.841s_person_det2_conf0.96.jpg",
+          "data/extracted_frames\\detections\\event_4_at_21.841s_person_det3_conf0.92.jpg",
+          "data/extracted_frames\\detections\\event_4_at_21.841s_person_det4_conf0.85.jpg",
+          "data/extracted_frames\\detections\\event_4_at_21.841s_person_det5_conf0.88.jpg",
+          "data/extracted_frames\\detections\\event_4_at_21.841s_person_det6_conf0.81.jpg"
+        ]
+      },
+      {
+        "event_type": "weapon",
+        "first_second": 28.912,
+        "confidence": 0.85,
+        "description": "A person in a black tank top and shorts is seen holding a bladed weapon in their right hand.",
+        "suggested_frame_seconds": 28.912,
+        "weapon_type": "firearm",
+        "person_attributes": "A young man with dark hair, wearing a beige t-shirt and ripped blue jeans, is standing in the middle of the street looking at the camera.",
+        "image_path": "data/extracted_frames\\scenes\\scene_event_5_at_28.912s.jpg",
+        "detected_elements_paths": [
+          "data/extracted_frames\\detections\\event_5_at_28.912s_weapon_det1_conf0.85.jpg",
+          "data/extracted_frames\\detections\\event_5_at_28.912s_person_det2_conf0.95.jpg"
+        ]
+      }
+    ],
+    "incident_id": "8e0ab989-45d5-4ef9-9c5e-f07f7cf37f15",
+    "timestamp": "2025-09-28T16:44:55.219461",
+    "status": "pending",
+    "location": {
+      "address": "ميدان التحرير, قصر الدوباره, باب اللوق, القاهرة, 11519, مصر",
+      "latitude": 30.0444,
+      "longitude": 31.2357
+    },
+    "real_files": [
+      "data\\uploads\\videos\\c449314f-3364-4a7a-9018-b25fc917466a.mp4"
+    ]
+  },
+  {
+    "category": "Utility",
+    "title": "Public Street Brawl",
+    "description": "A group of men are engaged in a violent street fight in a crowded urban area. The altercation involves chasing and physical assaults, causing a public disturbance.",
+    "severity": "High",
+    "verified": "Real",
+    "violence_type": "assaults",
+    "weapon": "machete",
+    "site_description": "A busy, narrow city street lined with multi-story buildings containing shops and residences, with several auto-rickshaws (tuk-tuks) and pedestrians present.",
+    "number_of_people": 5,
+    "description_of_people": "Several young to middle-aged men are involved. Two are shirtless, one wearing black shorts and another wearing brown shorts. Other participants include a man in a red t-shirt and another in a striped polo shirt.",
+    "detailed_description_for_the_incident": "The video captures a chaotic brawl erupting on a public street. Two shirtless young men are seen chasing and fighting each other, with at least one brandishing a machete. Other men join the altercation, escalating the conflict amidst parked and moving auto-rickshaws while a crowd of onlookers gathers.",
+    "accident_type": null,
+    "vehicles_machines_involved": null,
+    "utility_type": null,
+    "extent_of_impact": null,
+    "duration": null,
+    "illegal_type": null,
+    "items_involved": null,
+    "detected_events": [
+      {
+        "event_type": "weapon",
+        "first_second": 3.21,
+        "confidence": 0.95,
+        "description": "A person inside a blue auto-rickshaw brandishes a long bladed weapon.",
+        "suggested_frame_seconds": 3.21,
+        "weapon_type": "stick/pole",
+        "person_attributes": "The driver of the auto-rickshaw, a man wearing a light-colored shirt, is visible through the windshield.",
+        "image_path": "data/extracted_frames\\scenes\\scene_event_1_at_3.210s.jpg",
+        "detected_elements_paths": [
+          "data/extracted_frames\\detections\\event_1_at_3.210s_person_det1_conf0.85.jpg",
+          "data/extracted_frames\\detections\\event_1_at_3.210s_person_det2_conf0.75.jpg",
+          "data/extracted_frames\\detections\\event_1_at_3.210s_weapon_det3_conf0.60.jpg"
+        ]
+      },
+      {
+        "event_type": "person",
+        "first_second": 12.1,
+        "confidence": 0.88,
+        "description": "A shirtless man in black shorts involved in the chase has a clear profile view.",
+        "suggested_frame_seconds": 12.1,
+        "weapon_type": "unknown",
+        "person_attributes": "A shirtless young man with dark hair, wearing brownish shorts and running barefoot. His face is visible in profile.",
+        "image_path": "data/extracted_frames\\scenes\\scene_event_2_at_12.100s.jpg",
+        "detected_elements_paths": [
+          "data/extracted_frames\\detections\\event_2_at_12.100s_person_det1_conf0.90.jpg",
+          "data/extracted_frames\\detections\\event_2_at_12.100s_person_det2_conf0.88.jpg",
+          "data/extracted_frames\\detections\\event_2_at_12.100s_weapon_det3_conf0.50.jpg"
+        ]
+      },
+      {
+        "event_type": "weapon",
+        "first_second": 17.35,
+        "confidence": 0.98,
+        "description": "A man in a light-colored shirt brandishes a long bladed weapon, possibly a sword, in the middle of the street.",
+        "suggested_frame_seconds": 17.35,
+        "weapon_type": "knife/machete",
+        "person_attributes": "A man in a yellow shirt and dark pants.",
+        "image_path": "data/extracted_frames\\scenes\\scene_event_3_at_17.350s.jpg",
+        "detected_elements_paths": [
+          "data/extracted_frames\\detections\\event_3_at_17.350s_person_det1_conf0.94.jpg",
+          "data/extracted_frames\\detections\\event_3_at_17.350s_person_det2_conf0.92.jpg",
+          "data/extracted_frames\\detections\\event_3_at_17.350s_person_det3_conf0.91.jpg",
+          "data/extracted_frames\\detections\\event_3_at_17.350s_person_det4_conf0.93.jpg",
+          "data/extracted_frames\\detections\\event_3_at_17.350s_person_det5_conf0.88.jpg",
+          "data/extracted_frames\\detections\\event_3_at_17.350s_person_det6_conf0.89.jpg",
+          "data/extracted_frames\\detections\\event_3_at_17.350s_person_det7_conf0.85.jpg",
+          "data/extracted_frames\\detections\\event_3_at_17.350s_weapon_det8_conf0.78.jpg"
+        ]
+      },
+      {
+        "event_type": "person",
+        "first_second": 23.05,
+        "confidence": 0.9,
+        "description": "A man in a beige shirt and grey pants initiates physical contact by shoving another person.",
+        "suggested_frame_seconds": 23.05,
+        "weapon_type": null,
+        "person_attributes": "A man in a light-colored button-up shirt standing next to a purple vehicle.",
+        "image_path": "data/extracted_frames\\scenes\\scene_event_4_at_23.050s.jpg",
+        "detected_elements_paths": [
+          "data/extracted_frames\\detections\\event_4_at_23.050s_person_det1_conf0.95.jpg",
+          "data/extracted_frames\\detections\\event_4_at_23.050s_person_det2_conf0.92.jpg",
+          "data/extracted_frames\\detections\\event_4_at_23.050s_person_det3_conf0.91.jpg",
+          "data/extracted_frames\\detections\\event_4_at_23.050s_person_det4_conf0.96.jpg",
+          "data/extracted_frames\\detections\\event_4_at_23.050s_person_det5_conf0.94.jpg",
+          "data/extracted_frames\\detections\\event_4_at_23.050s_person_det6_conf0.88.jpg",
+          "data/extracted_frames\\detections\\event_4_at_23.050s_person_det7_conf0.93.jpg"
+        ]
+      },
+      {
+        "event_type": "person",
+        "first_second": 28.6,
+        "confidence": 0.85,
+        "description": "A man with a buzz cut wearing a black shirt has a clear, unobstructed view of his face.",
+        "suggested_frame_seconds": 28.6,
+        "weapon_type": null,
+        "person_attributes": "A man in a light-colored, possibly white, collared shirt standing in the background. His face is partially visible.",
+        "image_path": "data/extracted_frames\\scenes\\scene_event_5_at_28.600s.jpg",
+        "detected_elements_paths": [
+          "data/extracted_frames\\detections\\event_5_at_28.600s_person_det1_conf0.90.jpg",
+          "data/extracted_frames\\detections\\event_5_at_28.600s_person_det2_conf0.70.jpg"
+        ]
+      }
+    ],
+    "incident_id": "72912875-299c-4f13-b85c-abb8511c1cd9",
+    "timestamp": "2025-09-28T16:58:47.117461",
+    "status": "pending",
+    "location": {
+      "address": "ميدان التحرير, قصر الدوباره, باب اللوق, القاهرة, 11519, مصر",
+      "latitude": 30.0444,
+      "longitude": 31.2357
+    },
+    "real_files": [
+      "data\\uploads\\videos\\c449314f-3364-4a7a-9018-b25fc917466a.mp4"
+    ]
+  },
+  {
+    "category": "Accident",
+    "title": "لا يوجد حادث",
+    "description": "الفيديو لا يعرض أي حادثة. الشاشة سوداء بالكامل ولا يوجد أي صوت.",
+    "severity": "منخفض",
+    "verified": "غير حقيقي",
+    "violence_type": null,
+    "weapon": null,
+    "site_description": null,
+    "number_of_people": null,
+    "description_of_people": null,
+    "detailed_description_for_the_incident": null,
+    "accident_type": null,
+    "vehicles_machines_involved": null,
+    "utility_type": null,
+    "extent_of_impact": null,
+    "duration": null,
+    "illegal_type": null,
+    "items_involved": null,
+    "detected_events": [],
+    "incident_id": "0bb6305b-dbc0-4b8e-bd74-a27554c11d12",
+    "timestamp": "2025-09-30T00:39:19.926120",
+    "status": "rejected",
+    "location": {
+      "address": "55, شارع سالم يونس, مرسى مطروح, مطروح, 51511, مصر",
+      "latitude": 31.3521,
+      "longitude": 27.2506124
+    },
+    "real_files": [
+      "data\\uploads\\videos\\413bb508-cf99-431e-92b1-8bc64c36b00b.mp4"
+    ]
+  },
+  {
+    "category": "Violence",
+    "title": "مشاجرة عنيفة بالشارع",
+    "description": "اندلعت مشاجرة جماعية بين عدد من الشباب في شارع عام مزدحم. تضمن الشجار مطاردات واشتباكات جسدية، مما أثار حالة من الفوضى في المكان.",
+    "severity": "عالي",
+    "verified": "حقيقي",
+    "violence_type": "الاعتداءات",
+    "weapon": "عصي",
+    "site_description": "شارع تجاري مزدحم يضم محلات ومبان سكنية، مع وجود العديد من مركبات التوك توك والمارة.",
+    "number_of_people": 6,
+    "description_of_people": "مجموعة من الشباب في أواخر سن المراهقة أو أوائل العشرينات، بعضهم عاري الصدر ويرتدي سراويل قصيرة.",
+    "detailed_description_for_the_incident": "يُظهر الفيديو مشاجرة عنيفة وفوضوية في الشارع بين عدة شباب. يركض بعضهم ويطاردون بعضهم البعض، ويشتبكون جسديًا وسط حركة المرور والمشاة. يستغيث مصور الفيديو بالشرطة للتدخل وإنهاء الشجار.",
+    "accident_type": null,
+    "vehicles_machines_involved": null,
+    "utility_type": null,
+    "extent_of_impact": null,
+    "duration": null,
+    "illegal_type": null,
+    "items_involved": null,
+    "detected_events": [
+      {
+        "event_type": "weapon",
+        "first_second": 3.251,
+        "confidence": 0.95,
+        "description": "شخص يجلس في توك توك يحمل سلاحًا أبيض طويلًا.",
+        "suggested_frame_seconds": 3.251,
+        "weapon_type": "stick/pole",
+        "person_attributes": "A young person with dark hair, wearing a striped t-shirt and shorts, sitting in the passenger seat of a blue auto-rickshaw. Their face is visible.",
+        "image_path": "data/extracted_frames\\scenes\\scene_event_1_at_3.251s.jpg",
+        "detected_elements_paths": [
+          "data/extracted_frames\\detections\\event_1_at_3.251s_person_det1_conf0.90.jpg",
+          "data/extracted_frames\\detections\\event_1_at_3.251s_weapon_det2_conf0.75.jpg"
+        ]
+      },
+      {
+        "event_type": "person",
+        "first_second": 11.748,
+        "confidence": 0.92,
+        "description": "وجه واضح لأحد المشاركين الرئيسيين في الشجار وهو يركض عاري الصدر.",
+        "suggested_frame_seconds": 11.748,
+        "weapon_type": null,
+        "person_attributes": "A shirtless young man with dark hair, glasses, and dark shorts running in the street. His face is clearly visible.",
+        "image_path": "data/extracted_frames\\scenes\\scene_event_2_at_11.748s.jpg",
+        "detected_elements_paths": [
+          "data/extracted_frames\\detections\\event_2_at_11.748s_person_det1_conf0.95.jpg",
+          "data/extracted_frames\\detections\\event_2_at_11.748s_person_det2_conf0.95.jpg"
+        ]
+      },
+      {
+        "event_type": "weapon",
+        "first_second": 17.651,
+        "confidence": 0.98,
+        "description": "رجل عاري الصدر يلوح بسلاح أبيض يشبه الساطور في مواجهة شخص آخر.",
+        "suggested_frame_seconds": 17.651,
+        "weapon_type": "knife/machete",
+        "person_attributes": "A man with a beard wearing a white patterned shirt and pants.",
+        "image_path": "data/extracted_frames\\scenes\\scene_event_3_at_17.651s.jpg",
+        "detected_elements_paths": [
+          "data/extracted_frames\\detections\\event_3_at_17.651s_person_det1_conf0.90.jpg",
+          "data/extracted_frames\\detections\\event_3_at_17.651s_person_det2_conf0.88.jpg",
+          "data/extracted_frames\\detections\\event_3_at_17.651s_person_det3_conf0.85.jpg",
+          "data/extracted_frames\\detections\\event_3_at_17.651s_person_det4_conf0.82.jpg",
+          "data/extracted_frames\\detections\\event_3_at_17.651s_weapon_det5_conf0.75.jpg"
+        ]
+      },
+      {
+        "event_type": "person",
+        "first_second": 22.311,
+        "confidence": 0.9,
+        "description": "وجه واضح لرجل يرتدي قميصًا رماديًا وشورتًا أبيض أثناء مشاركته في المشاجرة.",
+        "suggested_frame_seconds": 22.311,
+        "weapon_type": null,
+        "person_attributes": "A person with long hair, possibly a woman, wearing a light-colored top, seen on the far right.",
+        "image_path": "data/extracted_frames\\scenes\\scene_event_4_at_22.311s.jpg",
+        "detected_elements_paths": [
+          "data/extracted_frames\\detections\\event_4_at_22.311s_person_det1_conf0.95.jpg",
+          "data/extracted_frames\\detections\\event_4_at_22.311s_person_det2_conf0.88.jpg",
+          "data/extracted_frames\\detections\\event_4_at_22.311s_person_det3_conf0.86.jpg",
+          "data/extracted_frames\\detections\\event_4_at_22.311s_person_det4_conf0.80.jpg"
+        ]
+      }
+    ],
+    "incident_id": "d6025dc4-ce5f-42f8-a219-833db128eaae",
+    "timestamp": "2025-09-29T21:55:30.850565",
+    "status": "pending",
+    "location": {
+      "address": "ميدان التحرير, قصر الدوباره, باب اللوق, القاهرة, 11519, مصر",
+      "latitude": 30.0444,
+      "longitude": 31.2357
+    },
+    "real_files": [
+      "data\\uploads\\videos\\d7ec8a08-bb82-4798-94bc-393055e3594e.mp4"
+    ]
+  },
+  {
+    "category": "Violence",
+    "title": "مشاجرة عنيفة بالأسلحة",
+    "description": "اندلعت مشاجرة عنيفة بين مجموعة من الشباب في شارع عام مزدحم. استخدم المشاركون في الشجار أسلحة بيضاء، مما أثار حالة من الفوضى والذعر بين المارة.",
+    "severity": "high",
+    "verified": "real",
+    "violence_type": "assaults",
+    "weapon": "أسلحة بيضاء (سنج)",
+    "site_description": "شارع تجاري مزدحم يضم مبانٍ سكنية ومحلات تجارية، ويشهد حركة مرور للمركبات والمشاة.",
+    "number_of_people": 6,
+    "description_of_people": "مجموعة من الشباب، بعضهم عاري الصدر ويرتدي سراويل قصيرة، والبعض الآخر يرتدي ملابس عادية.",
+    "detailed_description_for_the_incident": "بدأ الشجار في شارع عام حيث قام عدد من الشباب بمطاردة بعضهم البعض والاشتباك بالأيدي. لوحظ أن بعضهم كان يحمل أسلحة بيضاء، مما أدى إلى حالة من الفوضى في الشارع. قام مصور الفيديو بالصراخ وطلب النجدة من الشرطة للتدخل.",
+    "accident_type": null,
+    "vehicles_machines_involved": null,
+    "utility_type": null,
+    "extent_of_impact": null,
+    "duration": null,
+    "illegal_type": null,
+    "items_involved": null,
+    "detected_events": [
+      {
+        "event_type": "weapon",
+        "first_second": 3.012,
+        "confidence": 0.8,
+        "description": "شخص يجلس في توك توك يحمل سلاحًا أبيض طويلًا.",
+        "suggested_frame_seconds": 3.22,
+        "weapon_type": "unknown",
+        "person_attributes": "شخص يجلس في عربة توك توك، يرتدي قميصًا مخططًا باللونين الأبيض والأسود.",
+        "image_path": "data/extracted_frames\\scenes\\scene_event_1_at_3.220s.jpg",
+        "detected_elements_paths": [
+          "data/extracted_frames\\detections\\event_1_at_3.220s_person_det1_conf0.92.jpg",
+          "data/extracted_frames\\detections\\event_1_at_3.220s_weapon_det2_conf0.78.jpg"
+        ]
+      },
+      {
+        "event_type": "person",
+        "first_second": 11.89,
+        "confidence": 0.9,
+        "description": "وجه واضح لشخص عاري الصدر يركض ويشارك في الشجار.",
+        "suggested_frame_seconds": 12.012,
+        "weapon_type": null,
+        "person_attributes": "رجل عاري الصدر يركض في الشارع.",
+        "image_path": "data/extracted_frames\\scenes\\scene_event_2_at_12.012s.jpg",
+        "detected_elements_paths": [
+          "data/extracted_frames\\detections\\event_2_at_12.012s_person_det1_conf0.91.jpg",
+          "data/extracted_frames\\detections\\event_2_at_12.012s_person_det2_conf0.85.jpg"
+        ]
+      },
+      {
+        "event_type": "weapon",
+        "first_second": 17.15,
+        "confidence": 0.95,
+        "description": "رجل يرتدي قميصًا بنيًا يهاجم آخر بسلاح أبيض كبير.",
+        "suggested_frame_seconds": 17.585,
+        "weapon_type": null,
+        "person_attributes": "رجل يركب دراجة نارية.",
+        "image_path": "data/extracted_frames\\scenes\\scene_event_3_at_17.585s.jpg",
+        "detected_elements_paths": [
+          "data/extracted_frames\\detections\\event_3_at_17.585s_person_det1_conf0.93.jpg",
+          "data/extracted_frames\\detections\\event_3_at_17.585s_person_det2_conf0.91.jpg",
+          "data/extracted_frames\\detections\\event_3_at_17.585s_person_det3_conf0.94.jpg",
+          "data/extracted_frames\\detections\\event_3_at_17.585s_person_det4_conf0.92.jpg",
+          "data/extracted_frames\\detections\\event_3_at_17.585s_person_det5_conf0.89.jpg",
+          "data/extracted_frames\\detections\\event_3_at_17.585s_person_det6_conf0.85.jpg",
+          "data/extracted_frames\\detections\\event_3_at_17.585s_person_det7_conf0.87.jpg"
+        ]
+      },
+      {
+        "event_type": "person",
+        "first_second": 21.84,
+        "confidence": 0.9,
+        "description": "وجه واضح لرجل يرتدي قميصًا رماديًا وشورتًا أبيض يتدخل في الشجار.",
+        "suggested_frame_seconds": 22.142,
+        "weapon_type": null,
+        "person_attributes": "رجل يرتدي قميصًا أبيض وبنطال جينز أزرق يقف في الخلفية.",
+        "image_path": "data/extracted_frames\\scenes\\scene_event_4_at_22.142s.jpg",
+        "detected_elements_paths": [
+          "data/extracted_frames\\detections\\event_4_at_22.142s_person_det1_conf0.97.jpg",
+          "data/extracted_frames\\detections\\event_4_at_22.142s_person_det2_conf0.98.jpg",
+          "data/extracted_frames\\detections\\event_4_at_22.142s_person_det3_conf0.92.jpg",
+          "data/extracted_frames\\detections\\event_4_at_22.142s_person_det4_conf0.88.jpg",
+          "data/extracted_frames\\detections\\event_4_at_22.142s_person_det5_conf0.86.jpg"
+        ]
+      }
+    ],
+    "incident_id": "c6b71be2-7156-4f4a-a8ff-a8e3916476d1",
+    "timestamp": "2025-09-29T22:22:16.180692",
+    "status": "accepted",
+    "location": {
+      "address": "ميدان التحرير, قصر الدوباره, باب اللوق, القاهرة, 11519, مصر",
+      "latitude": 30.0444,
+      "longitude": 31.2357
+    },
+    "real_files": [
+      "data\\uploads\\videos\\86d0c090-c612-4e41-87f5-a925edb419f1.mp4"
+    ]
+  },
+  {
+    "category": "Utility",
+    "title": "انقطاع التيار الكهربائي",
+    "description": "تم تسجيل انقطاع كامل للتيار الكهربائي في الموقع. أدى ذلك إلى توقف كاميرا المراقبة عن العمل وظهور شاشة سوداء.",
+    "severity": "medium",
+    "verified": "real",
+    "violence_type": null,
+    "weapon": null,
+    "site_description": "منطقة سكنية في 5 شارع محمد فريد، مرسى مطروح.",
+    "number_of_people": null,
+    "description_of_people": null,
+    "detailed_description_for_the_incident": null,
+    "accident_type": null,
+    "vehicles_machines_involved": null,
+    "utility_type": "electricity outage",
+    "extent_of_impact": "يؤثر على المنطقة السكنية المحيطة بالعنوان المذكور.",
+    "duration": "غير معروف",
+    "illegal_type": null,
+    "items_involved": null,
+    "detected_events": [],
+    "incident_id": "91717c36-8245-4b0f-bf66-8754576868fb",
+    "timestamp": "2025-09-30T01:43:35.052233",
+    "status": "rejected",
+    "location": {
+      "address": "5, شارع محمد فريد, محدرة, مرسى مطروح, مطروح, 51511, مصر",
+      "latitude": 31.3521994,
+      "longitude": 27.2506257
+    },
+    "real_files": [
+      "data\\uploads\\images\\45bb3bf8-bd02-408a-bbe1-1354a75bb8e7.jpg"
+    ]
+  },
+  {
+    "category": "حادث",
+    "title": "حادث انقلاب سيارة",
+    "description": "اصطدمت شاحنة بيضاء بسيارة سوداء، مما أدى إلى انقلابها عدة مرات. وقع الحادث على طريق سريع مزدحم.",
+    "severity": "high",
+    "verified": "real",
+    "violence_type": null,
+    "weapon": null,
+    "site_description": "طريق سريع مزدحم بالمركبات.",
+    "number_of_people": null,
+    "description_of_people": null,
+    "detailed_description_for_the_incident": null,
+    "accident_type": "traffic",
+    "vehicles_machines_involved": "شاحنة بيضاء وسيارة دفع رباعي سوداء",
+    "utility_type": null,
+    "extent_of_impact": null,
+    "duration": null,
+    "illegal_type": null,
+    "items_involved": null,
+    "detected_events": [],
+    "incident_id": "8fa0d355-fbac-4de3-879d-4cd57b0bed22",
+    "timestamp": "2025-09-30T11:59:38.462169",
+    "status": "accepted",
+    "location": {
+      "address": "55, شارع سالم يونس, مرسى مطروح, مطروح, 51511, مصر",
+      "latitude": 31.352045,
+      "longitude": 27.2505667
+    },
+    "real_files": [
+      "data\\uploads\\videos\\efc68d2e-3c18-4978-b88a-159b71b9f488.mp4"
+    ]
+  },
+  {
+    "category": "Utility",
+    "title": "انقطاع التيار الكهربائي",
+    "description": "تم تسجيل انقطاع للتيار الكهربائي في الموقع المحدد. الفيديو يظهر ظلامًا دامسًا مما يؤكد عدم وجود إضاءة.",
+    "severity": "low",
+    "verified": "fake",
+    "violence_type": null,
+    "weapon": null,
+    "site_description": "المنطقة المحيطة بالعنوان المحدد، ولكن لا يمكن تحديد التفاصيل بسبب الظلام التام.",
+    "number_of_people": null,
+    "description_of_people": null,
+    "detailed_description_for_the_incident": null,
+    "accident_type": null,
+    "vehicles_machines_involved": null,
+    "utility_type": "electricity outage",
+    "extent_of_impact": "غير محدد",
+    "duration": "غير معروف",
+    "illegal_type": null,
+    "items_involved": null,
+    "detected_events": [],
+    "incident_id": "f701c133-6c3a-435b-b184-50e68996031b",
+    "timestamp": "2025-09-30T14:46:24.516750",
+    "status": "pending",
+    "location": {
+      "address": "8, شارع محمد فريد, محدرة, مرسى مطروح, مطروح, 51511, مصر",
+      "latitude": 31.3521411,
+      "longitude": 27.2505977
+    },
+    "real_files": [
+      "data\\uploads\\videos\\d83e172d-1cee-4fb5-830a-893ce8b21e66.mp4"
+    ]
+  },
+  {
+    "category": "Illegal Activity",
+    "title": "نشاط إلكتروني وهمي",
+    "description": "يُظهر الفيديو شاشة كمبيوتر تعرض سجلات نظام. المتحدثة في الفيديو تؤكد أن هذا الحدث وهمي.",
+    "severity": "low",
+    "verified": "fake",
+    "violence_type": null,
+    "weapon": null,
+    "site_description": "نظام كمبيوتر يعرض سجلات الخادم.",
+    "number_of_people": null,
+    "description_of_people": null,
+    "detailed_description_for_the_incident": null,
+    "accident_type": null,
+    "vehicles_machines_involved": null,
+    "utility_type": null,
+    "extent_of_impact": null,
+    "duration": null,
+    "illegal_type": "cybercrime",
+    "items_involved": "سجلات الخادم",
+    "detected_events": [],
+    "incident_id": "97b201b4-7184-4c09-bf13-42544e760ef9",
+    "timestamp": "2025-09-30T15:52:19.503322",
+    "status": "rejected",
+    "location": {
+      "address": "5, شارع محمد فريد, محدرة, مرسى مطروح, مطروح, 51511, مصر",
+      "latitude": 31.352186,
+      "longitude": 27.2506219
+    },
+    "real_files": [
+      "data\\uploads\\videos\\d24a5ae8-42b6-427a-a8c8-af6d061c4c26.mp4"
+    ]
+  },
+  {
+    "category": "Violence",
+    "title": "تصوير نافذة وأشجار",
+    "description": "شخص يقوم بتصوير نافذة من داخل غرفة تطل على بعض الأشجار. لا يوجد أي حدث أو نشاط مشبوه يمكن ملاحظته.",
+    "severity": "low",
+    "verified": "fake",
+    "violence_type": "suspicious activity",
+    "weapon": "none",
+    "site_description": "من داخل غرفة مظلمة، يتم التصوير عبر نافذة سقفية تطل على فناء خارجي به أشجار كثيفة.",
+    "number_of_people": 1,
+    "description_of_people": "صوت رجل واحد يتحدث ويصف ما يقوم بتصويره.",
+    "detailed_description_for_the_incident": "يظهر في الفيديو منظر من خلال نافذة لأشجار في الخارج. يُسمع صوت رجل يقول إنه يصور النافذة والأشجار. لا يحتوي الفيديو على أي دليل يشير إلى وقوع حادثة فعلية.",
+    "accident_type": null,
+    "vehicles_machines_involved": null,
+    "utility_type": null,
+    "extent_of_impact": null,
+    "duration": null,
+    "illegal_type": null,
+    "items_involved": null,
+    "detected_events": [],
+    "incident_id": "a73c4e56-680e-406c-b033-f4f142d836a0",
+    "timestamp": "2025-09-30T16:07:50.983786",
+    "status": "pending",
+    "location": {
+      "address": "55, شارع سالم يونس, مرسى مطروح, مطروح, 51511, مصر",
+      "latitude": 31.3520907,
+      "longitude": 27.2505969
+    },
+    "real_files": [
+      "data\\uploads\\videos\\5b0a8da7-d2f3-4dc8-8d59-bf7f827e5c93.mp4"
+    ]
+  }
+]
