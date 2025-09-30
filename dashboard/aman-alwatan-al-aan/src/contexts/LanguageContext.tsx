@@ -1,0 +1,463 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
+
+export type Language = 'ar' | 'en';
+
+interface LanguageContextType {
+  language: Language;
+  setLanguage: (lang: Language) => void;
+  t: (key: string, params?: Record<string, string>) => string;
+}
+
+const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+
+const translations = {
+  ar: {
+    // Navigation
+    'nav.dashboard': 'لوحة التحكم',
+    'nav.reports': 'التقارير',
+    'nav.alerts': 'التنبيهات',
+    'nav.analytics': 'التحليلات',
+    'nav.settings': 'الإعدادات',
+    'nav.logout': 'تسجيل الخروج',
+    
+    // Dashboard
+    'dashboard.title': 'لوحة التحكم',
+    'dashboard.activeReports': 'البلاغات النشطة',
+    'dashboard.highRiskAlerts': 'تنبيهات عالية الخطر',
+    'dashboard.pendingActions': 'الإجراءات المعلقة',
+    'dashboard.unitsDeployed': 'الوحدات المنتشرة',
+    'dashboard.liveIncidentMap': 'خريطة الحوادث المباشرة',
+    'dashboard.liveAlertsActivity': 'نشاط التنبيهات المباشرة',
+    'dashboard.all': 'الكل',
+    'dashboard.violence': 'عنف',
+    'dashboard.accidents': 'حوادث',
+    'dashboard.utility': 'مرافق',
+    'dashboard.illegal': 'غير قانوني',
+    'dashboard.fire': 'حريق',
+    'dashboard.weapon': 'سلاح',
+    'dashboard.accident': 'حادث',
+    'dashboard.crowd': 'تجمع',
+    'dashboard.credibility': 'المصداقية',
+    'dashboard.active': 'نشط',
+    'dashboard.dispatched': 'تم الإرسال',
+    'dashboard.investigating': 'جاري التحقيق',
+    'dashboard.monitoring': 'مراقبة',
+    'dashboard.resolved': 'تم الحل',
+    'dashboard.highPriority': 'أولوية عالية',
+    'dashboard.mediumPriority': 'أولوية متوسطة',
+    'dashboard.lowPriority': 'أولوية منخفضة',
+    'dashboard.severity': 'الخطورة',
+    'dashboard.justNow': 'الآن',
+    'dashboard.minAgo': 'دقيقة مضت',
+    'dashboard.minsAgo': 'دقائق مضت',
+    'dashboard.hourAgo': 'ساعة مضت',
+    'dashboard.hoursAgo': 'ساعات مضت',
+    'dashboard.dayAgo': 'يوم مضى',
+    'dashboard.daysAgo': 'أيام مضت',
+    'dashboard.loadingIncidents': 'جاري تحميل الحوادث...',
+    'dashboard.noIncidentsFound': 'لم يتم العثور على حوادث',
+    
+    // Settings
+    'settings.title': 'إعدادات النظام',
+    'settings.subtitle': 'إدارة المستخدمين والتنبيهات وتكوين النظام',
+    'settings.userManagement': 'إدارة المستخدمين',
+    'settings.alertSettings': 'إعدادات التنبيهات',
+    'settings.notifications': 'الإشعارات',
+    'settings.systemConfig': 'تكوين النظام',
+    'settings.addUser': 'إضافة مستخدم جديد',
+    'settings.name': 'الاسم',
+    'settings.email': 'البريد الإلكتروني',
+    'settings.role': 'الدور',
+    'settings.status': 'الحالة',
+    'settings.lastLogin': 'آخر تسجيل دخول',
+    'settings.actions': 'الإجراءات',
+    'settings.edit': 'تعديل',
+    'settings.delete': 'حذف',
+    'settings.active': 'نشط',
+    'settings.inactive': 'غير نشط',
+    
+    // Login
+    'login.title': 'نظام مراقبة السلطات الحكومية',
+    'login.subtitle': 'تسجيل الدخول للوحة التحكم',
+    'login.username': 'اسم المستخدم',
+    'login.password': 'كلمة المرور',
+    'login.authority': 'الجهة',
+    'login.selectAuthority': 'اختر الجهة',
+    'login.police': 'الشرطة',
+    'login.fire': 'الإطفاء',
+    'login.medical': 'الطبية',
+    'login.civilDefense': 'الدفاع المدني',
+    'login.button': 'تسجيل الدخول',
+    'login.systemInfo': 'نظام مراقبة شامل للبلاغات والحوادث',
+    'login.successTitle': 'تم تسجيل الدخول بنجاح',
+    'login.successMessage': 'مرحباً بك يا {username} في نظام {authority}',
+    'login.errorTitle': 'بيانات الدخول غير صحيحة',
+    'login.errorMessage': 'استخدم اسم المستخدم: maria، كلمة المرور: 1234، وحدد الجهة المناسبة',
+    
+    // Reports
+    'reports.title': 'إدارة البلاغات',
+    'reports.subtitle': 'عرض وإدارة جميع بلاغات الحوادث',
+    'reports.exportCSV': 'تصدير CSV',
+    'reports.exportPDF': 'تصدير PDF',
+    'reports.advancedFilters': 'فلاتر البحث المتقدم',
+    'reports.search': 'البحث',
+    'reports.searchPlaceholder': 'بحث في رقم البلاغ، النوع، أو الموقع...',
+    'reports.reportStatus': 'حالة البلاغ',
+    'reports.incidentType': 'نوع الحادث',
+    'reports.dateRange': 'نطاق التاريخ',
+    'reports.from': 'من',
+    'reports.to': 'إلى',
+    'reports.showing': 'عرض',
+    'reports.of': 'من',
+    'reports.reportNumber': 'رقم البلاغ',
+    'reports.type': 'النوع',
+    'reports.location': 'الموقع',
+    'reports.status': 'الحالة',
+    'reports.authority': 'الجهة المسؤولة',
+    'reports.severity': 'مستوى الخطورة',
+    'reports.credibility': 'المصداقية',
+    'reports.time': 'الوقت',
+    'reports.actions': 'الإجراءات',
+    'reports.view': 'عرض',
+    'reports.allTypes': 'جميع الأنواع',
+    'reports.allStatuses': 'جميع الحالات',
+    'reports.fire': 'حريق',
+    'reports.traffic': 'حادث مروري',
+    'reports.suspicious': 'نشاط مشبوه',
+    'reports.medical': 'طوارئ طبية',
+    'reports.weapon': 'اشتباه سلاح',
+    'reports.crowd': 'تجمع غير مصرح',
+    'reports.emergency': 'طوارئ',
+    'reports.active': 'نشط',
+    'reports.investigating': 'قيد التحقيق',
+    'reports.resolved': 'تم الحل',
+    'reports.falseReport': 'بلاغ كاذب',
+    'reports.high': 'عالي',
+    'reports.medium': 'متوسط',
+    'reports.low': 'منخفض',
+    'reports.allCategories': 'جميع الفئات',
+    'reports.violence': 'عنف',
+    'reports.accidents': 'حوادث',
+    'reports.utility': 'مرافق',
+    'reports.illegal': 'غير قانوني',
+    'reports.illegalActivity': 'نشاط غير قانوني',
+    'reports.pending': 'معلق',
+    'reports.reviewed': 'تمت المراجعة',
+    'reports.accepted': 'مقبول',
+    'reports.rejected': 'مرفوض',
+    'reports.real': 'حقيقي',
+    'reports.fake': 'مزيف',
+    'reports.titleHeader': 'العنوان',
+    'reports.verified': 'تم التحقق',
+    'reports.resetFilters': 'إعادة تعيين المرشحات',
+    'reports.loadingIncidents': 'جاري تحميل الحوادث...',
+    'reports.errorLoading': 'خطأ في تحميل الحوادث:',
+    'reports.noIncidentsFound': 'لم يتم العثور على حوادث',
+    
+    // Alerts
+    'alerts.title': 'إدارة التنبيهات',
+    'alerts.subtitle': 'عرض وإدارة جميع التنبيهات والحوادث في الوقت الفعلي',
+    'alerts.activeReports': 'البلاغات النشطة',
+    'alerts.highRiskAlerts': 'التنبيهات عالية الخطورة',
+    'alerts.pendingActions': 'الإجراءات المعلقة',
+    'alerts.unitsDeployed': 'الوحدات المنتشرة',
+    'alerts.today': 'اليوم',
+    'alerts.lastHour': 'الساعة الماضية',
+    'alerts.sinceYesterday': 'منذ أمس',
+    'alerts.filterAlerts': 'تصفية التنبيهات',
+    'alerts.searchPlaceholder': 'البحث في التنبيهات...',
+    'alerts.alertStatus': 'حالة التنبيه',
+    'alerts.alertType': 'نوع التنبيه',
+    'alerts.alertNumber': 'رقم التنبيه',
+    'alerts.activeAlerts': 'التنبيهات الفعالة',
+    'alerts.monitoring': 'تحت المراقبة',
+    'alerts.solved': 'محلول',
+    'alerts.close': 'إغلاق',
+    'alerts.confirmAlert': 'تأكيد التنبيه',
+    'alerts.sendPatrol': 'إرسال دورية',
+    'alerts.addNote': 'إضافة ملاحظة',
+    'alerts.responsibleAuthority': 'الجهة المسؤولة',
+    'alerts.credibilityLevel': 'مستوى المصداقية',
+    
+    // Analytics
+    'analytics.title': 'لوحة التحليلات',
+    'analytics.subtitle': 'مقاييس الأداء والاتجاهات',
+    'analytics.selectTimeRange': 'اختر النطاق الزمني',
+    'analytics.last24h': 'آخر 24 ساعة',
+    'analytics.last7days': 'آخر 7 أيام',
+    'analytics.last30days': 'آخر 30 يوم',
+    'analytics.last90days': 'آخر 90 يوم',
+    'analytics.customRange': 'نطاق مخصص',
+    'analytics.avgResponseTime': 'متوسط وقت الاستجابة',
+    'analytics.resolutionRate': 'معدل الحل',
+    'analytics.falseReports': 'البلاغات الكاذبة',
+    'analytics.improvement': 'تحسن',
+    'analytics.decrease': 'انخفاض',
+    'analytics.increase': 'زيادة',
+    'analytics.incidentsByType': 'توزيع الحوادث حسب النوع',
+    'analytics.weeklyTrends': 'اتجاهات الحوادث الأسبوعية',
+    'analytics.responseTimesByHour': 'متوسط أوقات الاستجابة حسب الساعة',
+    'analytics.incidentHotspots': 'البؤر الساخنة للحوادث',
+    'analytics.minutes': 'دقيقة',
+    'analytics.minutes2': 'دقائق',
+    'analytics.reported': 'مبلغ عنها',
+    'analytics.resolved': 'محلولة',
+    'analytics.police': 'الشرطة',
+    'analytics.fireService': 'الإطفاء',
+    'analytics.medicalService': 'الطبي',
+    'analytics.incident': 'حادث',
+    'analytics.incidents': 'حوادث',
+    'analytics.count': 'العدد',
+    
+    // Common
+    'common.language': 'اللغة',
+    'common.arabic': 'العربية',
+    'common.english': 'English'
+  },
+  en: {
+    // Navigation
+    'nav.dashboard': 'Dashboard',
+    'nav.reports': 'Reports',
+    'nav.alerts': 'Alerts',
+    'nav.analytics': 'Analytics',
+    'nav.settings': 'Settings',
+    'nav.logout': 'Logout',
+    
+    // Dashboard
+    'dashboard.title': 'Dashboard',
+    'dashboard.activeReports': 'Active Reports',
+    'dashboard.highRiskAlerts': 'High-Risk Alerts',
+    'dashboard.pendingActions': 'Pending Actions',
+    'dashboard.unitsDeployed': 'Units Deployed',
+    'dashboard.liveIncidentMap': 'Live Incident Map',
+    'dashboard.liveAlertsActivity': 'Live Alerts Activity',
+    'dashboard.all': 'All',
+    'dashboard.violence': 'Violence',
+    'dashboard.accidents': 'Accidents',
+    'dashboard.utility': 'Utility',
+    'dashboard.illegal': 'Illegal',
+    'dashboard.fire': 'Fire',
+    'dashboard.weapon': 'Weapon',
+    'dashboard.accident': 'Accident',
+    'dashboard.crowd': 'Crowd',
+    'dashboard.credibility': 'Credibility',
+    'dashboard.active': 'Active',
+    'dashboard.dispatched': 'Dispatched',
+    'dashboard.investigating': 'Investigating',
+    'dashboard.monitoring': 'Monitoring',
+    'dashboard.resolved': 'Resolved',
+    'dashboard.highPriority': 'High Priority',
+    'dashboard.mediumPriority': 'Medium Priority',
+    'dashboard.lowPriority': 'Low Priority',
+    'dashboard.severity': 'severity',
+    'dashboard.justNow': 'Just now',
+    'dashboard.minAgo': 'min ago',
+    'dashboard.minsAgo': 'mins ago',
+    'dashboard.hourAgo': 'hour ago',
+    'dashboard.hoursAgo': 'hours ago',
+    'dashboard.dayAgo': 'day ago',
+    'dashboard.daysAgo': 'days ago',
+    'dashboard.loadingIncidents': 'Loading incidents...',
+    'dashboard.noIncidentsFound': 'No incidents found',
+    
+    // Settings
+    'settings.title': 'System Settings',
+    'settings.subtitle': 'Manage users, alerts, and system configuration',
+    'settings.userManagement': 'User Management',
+    'settings.alertSettings': 'Alert Settings',
+    'settings.notifications': 'Notifications',
+    'settings.systemConfig': 'System Configuration',
+    'settings.addUser': 'Add New User',
+    'settings.name': 'Name',
+    'settings.email': 'Email',
+    'settings.role': 'Role',
+    'settings.status': 'Status',
+    'settings.lastLogin': 'Last Login',
+    'settings.actions': 'Actions',
+    'settings.edit': 'Edit',
+    'settings.delete': 'Delete',
+    'settings.active': 'Active',
+    'settings.inactive': 'Inactive',
+    
+    // Login
+    'login.title': 'Government Authorities Monitoring System',
+    'login.subtitle': 'Dashboard Login',
+    'login.username': 'Username',
+    'login.password': 'Password',
+    'login.authority': 'Authority',
+    'login.selectAuthority': 'Select Authority',
+    'login.police': 'Police',
+    'login.fire': 'Fire Department',
+    'login.medical': 'Medical',
+    'login.civilDefense': 'Civil Defense',
+    'login.button': 'Login',
+    'login.systemInfo': 'Comprehensive monitoring system for reports and incidents',
+    'login.successTitle': 'Login Successful',
+    'login.successMessage': 'Welcome {username} to the {authority} system',
+    'login.errorTitle': 'Invalid Credentials',
+    'login.errorMessage': 'Use username: maria, password: 1234, and select the appropriate authority',
+    
+    // Reports
+    'reports.title': 'Reports Management',
+    'reports.subtitle': 'View and manage all incident reports',
+    'reports.exportCSV': 'Export CSV',
+    'reports.exportPDF': 'Export PDF',
+    'reports.advancedFilters': 'Advanced Search Filters',
+    'reports.search': 'Search',
+    'reports.searchPlaceholder': 'Search by report number, type, or location...',
+    'reports.reportStatus': 'Report Status',
+    'reports.incidentType': 'Incident Type',
+    'reports.dateRange': 'Date Range',
+    'reports.from': 'From',
+    'reports.to': 'To',
+    'reports.showing': 'Showing',
+    'reports.of': 'of',
+    'reports.reportNumber': 'Report Number',
+    'reports.type': 'Type',
+    'reports.location': 'Location',
+    'reports.status': 'Status',
+    'reports.authority': 'Responsible Authority',
+    'reports.severity': 'Severity Level',
+    'reports.credibility': 'Credibility',
+    'reports.time': 'Time',
+    'reports.actions': 'Actions',
+    'reports.view': 'View',
+    'reports.allTypes': 'All Types',
+    'reports.allStatuses': 'All Statuses',
+    'reports.fire': 'Fire',
+    'reports.traffic': 'Traffic Accident',
+    'reports.suspicious': 'Suspicious Activity',
+    'reports.medical': 'Medical Emergency',
+    'reports.weapon': 'Weapon Suspicion',
+    'reports.crowd': 'Unauthorized Gathering',
+    'reports.emergency': 'Emergency',
+    'reports.active': 'Active',
+    'reports.investigating': 'Investigating',
+    'reports.resolved': 'Resolved',
+    'reports.falseReport': 'False Report',
+    'reports.high': 'High',
+    'reports.medium': 'Medium',
+    'reports.low': 'Low',
+    'reports.allCategories': 'All Categories',
+    'reports.violence': 'Violence',
+    'reports.accidents': 'Accidents',
+    'reports.utility': 'Utility',
+    'reports.illegal': 'Illegal',
+    'reports.illegalActivity': 'Illegal Activity',
+    'reports.pending': 'Pending',
+    'reports.reviewed': 'Reviewed',
+    'reports.accepted': 'Accepted',
+    'reports.rejected': 'Rejected',
+    'reports.real': 'Real',
+    'reports.fake': 'Fake',
+    'reports.titleHeader': 'Title',
+    'reports.verified': 'Verified',
+    'reports.resetFilters': 'Reset Filters',
+    'reports.loadingIncidents': 'Loading incidents...',
+    'reports.errorLoading': 'Error loading incidents:',
+    'reports.noIncidentsFound': 'No incidents found',
+    
+    // Alerts
+    'alerts.title': 'Alerts Management',
+    'alerts.subtitle': 'View and manage all alerts and incidents in real-time',
+    'alerts.activeReports': 'Active Reports',
+    'alerts.highRiskAlerts': 'High-Risk Alerts',
+    'alerts.pendingActions': 'Pending Actions',
+    'alerts.unitsDeployed': 'Units Deployed',
+    'alerts.today': 'Today',
+    'alerts.lastHour': 'Last Hour',
+    'alerts.sinceYesterday': 'Since Yesterday',
+    'alerts.filterAlerts': 'Filter Alerts',
+    'alerts.searchPlaceholder': 'Search alerts...',
+    'alerts.alertStatus': 'Alert Status',
+    'alerts.alertType': 'Alert Type',
+    'alerts.alertNumber': 'Alert Number',
+    'alerts.activeAlerts': 'Active Alerts',
+    'alerts.monitoring': 'Monitoring',
+    'alerts.solved': 'Solved',
+    'alerts.close': 'Close',
+    'alerts.confirmAlert': 'Confirm Alert',
+    'alerts.sendPatrol': 'Send Patrol',
+    'alerts.addNote': 'Add Note',
+    'alerts.responsibleAuthority': 'Responsible Authority',
+    'alerts.credibilityLevel': 'Credibility Level',
+    
+    // Analytics
+    'analytics.title': 'Analytics Dashboard',
+    'analytics.subtitle': 'Performance metrics and trends',
+    'analytics.selectTimeRange': 'Select Time Range',
+    'analytics.last24h': 'Last 24 Hours',
+    'analytics.last7days': 'Last 7 Days',
+    'analytics.last30days': 'Last 30 Days',
+    'analytics.last90days': 'Last 90 Days',
+    'analytics.customRange': 'Custom Range',
+    'analytics.avgResponseTime': 'Average Response Time',
+    'analytics.resolutionRate': 'Resolution Rate',
+    'analytics.falseReports': 'False Reports',
+    'analytics.improvement': 'Improvement',
+    'analytics.decrease': 'Decrease',
+    'analytics.increase': 'Increase',
+    'analytics.incidentsByType': 'Incidents by Type',
+    'analytics.weeklyTrends': 'Weekly Incident Trends',
+    'analytics.responseTimesByHour': 'Average Response Times by Hour',
+    'analytics.incidentHotspots': 'Incident Hotspots',
+    'analytics.minutes': 'Minute',
+    'analytics.minutes2': 'Minutes',
+    'analytics.reported': 'Reported',
+    'analytics.resolved': 'Resolved',
+    'analytics.police': 'Police',
+    'analytics.fireService': 'Fire Department',
+    'analytics.medicalService': 'Medical',
+    'analytics.incident': 'Incident',
+    'analytics.incidents': 'Incidents',
+    'analytics.count': 'Count',
+    
+    // Common
+    'common.language': 'Language',
+    'common.arabic': 'العربية',
+    'common.english': 'English'
+  }
+};
+
+export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [language, setLanguage] = useState<Language>('ar');
+
+  useEffect(() => {
+    const savedLanguage = localStorage.getItem('language') as Language;
+    if (savedLanguage && (savedLanguage === 'ar' || savedLanguage === 'en')) {
+      setLanguage(savedLanguage);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('language', language);
+    document.documentElement.setAttribute('lang', language);
+    document.documentElement.setAttribute('dir', language === 'ar' ? 'rtl' : 'ltr');
+  }, [language]);
+
+  const t = (key: string, params?: Record<string, string>): string => {
+    let translation = translations[language][key] || key;
+    
+    if (params) {
+      Object.entries(params).forEach(([param, value]) => {
+        translation = translation.replace(`{${param}}`, value);
+      });
+    }
+    
+    return translation;
+  };
+
+  return (
+    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+      {children}
+    </LanguageContext.Provider>
+  );
+};
+
+export const useLanguage = () => {
+  const context = useContext(LanguageContext);
+  if (context === undefined) {
+    throw new Error('useLanguage must be used within a LanguageProvider');
+  }
+  return context;
+};

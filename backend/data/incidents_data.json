@@ -1,0 +1,554 @@
+[
+  {
+    "incident_id": "eb5780c2-74be-44eb-b3e6-e045c64d35c7",
+    "timestamp_received": "2025-09-26T16:48:32.038087",
+    "location": {
+      "latitude": 31.3521541,
+      "longitude": 27.2505678
+    },
+    "incident": {
+      "description": ",",
+      "incident_type": "other",
+      "is_anonymous": false,
+      "timestamp": "2025-09-26T16:48:10.560481"
+    },
+    "files": [
+      {
+        "filename": "0e0dc4e2-6fe2-40cc-acc7-42d96ca749f76029339984993195910.mp4",
+        "file_type": "video",
+        "file_size": 837259,
+        "saved_filename": "ae0988ab-2bc1-4fbe-ad6c-39561ba009dd.mp4",
+        "file_path": "uploads\\videos\\ae0988ab-2bc1-4fbe-ad6c-39561ba009dd.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "5a8ed650-e755-450c-8ec3-85b26c3a25df",
+    "timestamp_received": "2025-09-28T18:04:10.924204",
+    "location": {
+      "latitude": 31.3521471,
+      "longitude": 27.2506319
+    },
+    "incident": {
+      "description": " .",
+      "incident_type": "other",
+      "is_anonymous": false,
+      "timestamp": "2025-09-28T18:03:00.999593"
+    },
+    "files": [
+      {
+        "filename": "4e8b47dd-1586-4c3f-a87f-5ec226c94e9f8238495026455987443.mp4",
+        "file_type": "video",
+        "file_size": 2855394,
+        "saved_filename": "636403d7-f893-469d-9b0b-b0e84c54a1a1.mp4",
+        "file_path": "data\\uploads\\videos\\636403d7-f893-469d-9b0b-b0e84c54a1a1.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "f3b6d7ab-a858-4504-af53-8c4994843436",
+    "timestamp_received": "2025-09-28T18:10:35.859931",
+    "location": {
+      "latitude": 31.3522057,
+      "longitude": 27.2506134
+    },
+    "incident": {
+      "description": ".",
+      "incident_type": "other",
+      "is_anonymous": true,
+      "timestamp": "2025-09-28T18:09:40.065851"
+    },
+    "files": [
+      {
+        "filename": "88b4425c-da5a-4231-81b1-c50c169f8ffa2224041361293362830.mp4",
+        "file_type": "video",
+        "file_size": 3034706,
+        "saved_filename": "981ae09a-a1b2-4798-85e7-8c187dfcbd81.mp4",
+        "file_path": "data\\uploads\\videos\\981ae09a-a1b2-4798-85e7-8c187dfcbd81.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "289c0d3c-eb63-4fe2-8df2-ebdc949887d7",
+    "timestamp_received": "2025-09-28T18:13:11.979546",
+    "location": {
+      "latitude": 31.3520683,
+      "longitude": 27.2504617
+    },
+    "incident": {
+      "description": ".",
+      "incident_type": "other",
+      "is_anonymous": true,
+      "timestamp": "2025-09-28T18:09:40.065851"
+    },
+    "files": [
+      {
+        "filename": "88b4425c-da5a-4231-81b1-c50c169f8ffa2224041361293362830.mp4",
+        "file_type": "video",
+        "file_size": 3034706,
+        "saved_filename": "f18918db-f8c9-408c-a1c0-8fef9c75eceb.mp4",
+        "file_path": "data\\uploads\\videos\\f18918db-f8c9-408c-a1c0-8fef9c75eceb.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "a744a21d-2bce-4d20-86f6-dad797d7a15d",
+    "timestamp_received": "2025-09-28T18:25:30.894851",
+    "location": {
+      "latitude": 31.3520328,
+      "longitude": 27.2505101
+    },
+    "incident": {
+      "description": ".",
+      "incident_type": "other",
+      "is_anonymous": true,
+      "timestamp": "2025-09-28T18:09:40.065851"
+    },
+    "files": [
+      {
+        "filename": "88b4425c-da5a-4231-81b1-c50c169f8ffa2224041361293362830.mp4",
+        "file_type": "video",
+        "file_size": 3034706,
+        "saved_filename": "0ae71f06-b4c5-45fd-ad19-0721dac09d05.mp4",
+        "file_path": "data\\uploads\\videos\\0ae71f06-b4c5-45fd-ad19-0721dac09d05.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "5bad88a9-e215-4678-90f3-451d57241c8d",
+    "timestamp_received": "2025-09-28T18:50:06.983716",
+    "location": {
+      "latitude": 31.352125,
+      "longitude": 27.2505567
+    },
+    "incident": {
+      "description": "c",
+      "incident_type": "trafficAccident",
+      "is_anonymous": false,
+      "timestamp": "2025-09-28T18:45:37.745293"
+    },
+    "files": [
+      {
+        "filename": "105dec37-8134-4b2e-984b-72355e845d767054075886169926723.mp4",
+        "file_type": "video",
+        "file_size": 1059548,
+        "saved_filename": "a8e1ef07-2037-404d-92fb-d52b3f06c5d5.mp4",
+        "file_path": "data\\uploads\\videos\\a8e1ef07-2037-404d-92fb-d52b3f06c5d5.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "68449552-4e44-4106-a3be-6d63aa4e8272",
+    "timestamp_received": "2025-09-28T18:52:38.196497",
+    "location": {
+      "latitude": 31.352125,
+      "longitude": 27.2505567
+    },
+    "incident": {
+      "description": "c",
+      "incident_type": "trafficAccident",
+      "is_anonymous": false,
+      "timestamp": "2025-09-28T18:45:37.745293"
+    },
+    "files": [
+      {
+        "filename": "105dec37-8134-4b2e-984b-72355e845d767054075886169926723.mp4",
+        "file_type": "video",
+        "file_size": 1059548,
+        "saved_filename": "8c413c4e-a4c8-45ea-811f-9346460f0192.mp4",
+        "file_path": "data\\uploads\\videos\\8c413c4e-a4c8-45ea-811f-9346460f0192.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "eb1d11ca-0eca-4749-a81d-bcbab3e0a7c2",
+    "timestamp_received": "2025-09-28T18:56:49.505544",
+    "location": {
+      "latitude": 31.3521427,
+      "longitude": 27.2505956
+    },
+    "incident": {
+      "description": "c",
+      "incident_type": "trafficAccident",
+      "is_anonymous": false,
+      "timestamp": "2025-09-28T18:45:37.745293"
+    },
+    "files": [
+      {
+        "filename": "105dec37-8134-4b2e-984b-72355e845d767054075886169926723.mp4",
+        "file_type": "video",
+        "file_size": 1059548,
+        "saved_filename": "a8a5b2e2-ec25-4753-9deb-2a58c82fedc9.mp4",
+        "file_path": "data\\uploads\\videos\\a8a5b2e2-ec25-4753-9deb-2a58c82fedc9.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "4f2769a1-a669-41c3-a9b9-5db3d094ca9f",
+    "timestamp_received": "2025-09-28T19:06:02.357649",
+    "location": {
+      "latitude": 31.3521815,
+      "longitude": 27.250611
+    },
+    "incident": {
+      "description": ".",
+      "incident_type": "medicalEmergency",
+      "is_anonymous": false,
+      "timestamp": "2025-09-28T19:05:22.191140"
+    },
+    "files": [
+      {
+        "filename": "89311cc0-13d7-468d-810d-23f84161051c2548200488684049524.mp4",
+        "file_type": "video",
+        "file_size": 2649932,
+        "saved_filename": "f014c4db-04da-4cc1-99e4-bd1099ce8b8e.mp4",
+        "file_path": "data\\uploads\\videos\\f014c4db-04da-4cc1-99e4-bd1099ce8b8e.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "00eff01b-0e65-4a7b-b616-4f6700901853",
+    "timestamp_received": "2025-09-28T19:10:13.404843",
+    "location": {
+      "latitude": 31.3521932,
+      "longitude": 27.2506133
+    },
+    "incident": {
+      "description": ".",
+      "incident_type": "violenceCrime",
+      "is_anonymous": false,
+      "timestamp": "2025-09-28T19:09:08.783469"
+    },
+    "files": [
+      {
+        "filename": "cb8b2ebd-2ae7-424b-ad2f-414b852c07466325009713009206154.mp4",
+        "file_type": "video",
+        "file_size": 2844920,
+        "saved_filename": "b182bebf-e37e-4ade-869e-babc282a1b88.mp4",
+        "file_path": "data\\uploads\\videos\\b182bebf-e37e-4ade-869e-babc282a1b88.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "0312907c-74e2-460a-b002-6b001d6e570b",
+    "timestamp_received": "2025-09-28T19:21:14.515778",
+    "location": {
+      "latitude": 31.3521956,
+      "longitude": 27.2506091
+    },
+    "incident": {
+      "description": ".",
+      "incident_type": "trafficAccident",
+      "is_anonymous": false,
+      "timestamp": "2025-09-28T19:20:32.410359"
+    },
+    "files": [
+      {
+        "filename": "e617ba60-7aa8-4a69-9452-ac49c06cc5147014082483704841649.mp4",
+        "file_type": "video",
+        "file_size": 3330686,
+        "saved_filename": "a238c73f-7491-44b7-957a-30739fc6830d.mp4",
+        "file_path": "data\\uploads\\videos\\a238c73f-7491-44b7-957a-30739fc6830d.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "8e0ab989-45d5-4ef9-9c5e-f07f7cf37f15",
+    "timestamp_received": "2025-09-28T19:44:55.259219",
+    "location": {
+      "latitude": 30.0444,
+      "longitude": 31.2357
+    },
+    "incident": {
+      "description": "A fight happened in the street.",
+      "incident_type": "Violence",
+      "is_anonymous": true,
+      "timestamp": "2025-09-28T16:44:55.219461"
+    },
+    "files": [
+      {
+        "filename": "test.mp4",
+        "file_type": "video",
+        "file_size": 2482815,
+        "saved_filename": "c449314f-3364-4a7a-9018-b25fc917466a.mp4",
+        "file_path": "data\\uploads\\videos\\c449314f-3364-4a7a-9018-b25fc917466a.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "72912875-299c-4f13-b85c-abb8511c1cd9",
+    "timestamp_received": "2025-09-28T19:58:47.158398",
+    "location": {
+      "latitude": 30.0444,
+      "longitude": 31.2357
+    },
+    "incident": {
+      "description": "A fight happened in the street.",
+      "incident_type": "Violence",
+      "is_anonymous": true,
+      "timestamp": "2025-09-28T16:58:47.117461"
+    },
+    "files": [
+      {
+        "filename": "test.mp4",
+        "file_type": "video",
+        "file_size": 2482815,
+        "saved_filename": "49554427-24f3-4829-854a-62227a977c4c.mp4",
+        "file_path": "data\\uploads\\videos\\49554427-24f3-4829-854a-62227a977c4c.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "0bb6305b-dbc0-4b8e-bd74-a27554c11d12",
+    "timestamp_received": "2025-09-30T00:52:29.387608",
+    "location": {
+      "latitude": 31.3521,
+      "longitude": 27.2506124
+    },
+    "incident": {
+      "description": ",",
+      "incident_type": "medicalEmergency",
+      "is_anonymous": false,
+      "timestamp": "2025-09-30T00:39:19.926120"
+    },
+    "files": [
+      {
+        "filename": "d510e179-2539-41c8-8955-6545e0f6bb1a4449175912775085421.mp4",
+        "file_type": "video",
+        "file_size": 1104545,
+        "saved_filename": "413bb508-cf99-431e-92b1-8bc64c36b00b.mp4",
+        "file_path": "data\\uploads\\videos\\413bb508-cf99-431e-92b1-8bc64c36b00b.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "d6025dc4-ce5f-42f8-a219-833db128eaae",
+    "timestamp_received": "2025-09-30T00:55:30.884609",
+    "location": {
+      "latitude": 30.0444,
+      "longitude": 31.2357
+    },
+    "incident": {
+      "description": "A fight happened in the street.",
+      "incident_type": "Violence",
+      "is_anonymous": true,
+      "timestamp": "2025-09-29T21:55:30.850565"
+    },
+    "files": [
+      {
+        "filename": "test.mp4",
+        "file_type": "video",
+        "file_size": 2482815,
+        "saved_filename": "d7ec8a08-bb82-4798-94bc-393055e3594e.mp4",
+        "file_path": "data\\uploads\\videos\\d7ec8a08-bb82-4798-94bc-393055e3594e.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "c6b71be2-7156-4f4a-a8ff-a8e3916476d1",
+    "timestamp_received": "2025-09-30T01:22:16.217341",
+    "location": {
+      "latitude": 30.0444,
+      "longitude": 31.2357
+    },
+    "incident": {
+      "description": "A fight happened in the street.",
+      "incident_type": "Violence",
+      "is_anonymous": true,
+      "timestamp": "2025-09-29T22:22:16.180692"
+    },
+    "files": [
+      {
+        "filename": "test.mp4",
+        "file_type": "video",
+        "file_size": 2482815,
+        "saved_filename": "86d0c090-c612-4e41-87f5-a925edb419f1.mp4",
+        "file_path": "data\\uploads\\videos\\86d0c090-c612-4e41-87f5-a925edb419f1.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "91717c36-8245-4b0f-bf66-8754576868fb",
+    "timestamp_received": "2025-09-30T01:44:09.215456",
+    "location": {
+      "latitude": 31.3521994,
+      "longitude": 27.2506257
+    },
+    "incident": {
+      "description": ".",
+      "incident_type": "other",
+      "is_anonymous": false,
+      "timestamp": "2025-09-30T01:43:35.052233"
+    },
+    "files": [
+      {
+        "filename": "6c9560a2-28c8-4e6e-b7a2-40d5f6858a4e1720953202788476868.jpg",
+        "file_type": "photo",
+        "file_size": 1471234,
+        "saved_filename": "45bb3bf8-bd02-408a-bbe1-1354a75bb8e7.jpg",
+        "file_path": "data\\uploads\\images\\45bb3bf8-bd02-408a-bbe1-1354a75bb8e7.jpg"
+      }
+    ]
+  },
+  {
+    "incident_id": "7905b6a7-20be-4d9f-a6f7-065ea9058e7e",
+    "timestamp_received": "2025-09-30T11:58:18.775879",
+    "location": {
+      "latitude": 31.3520803,
+      "longitude": 27.2505784
+    },
+    "incident": {
+      "description": ".",
+      "incident_type": "other",
+      "is_anonymous": false,
+      "timestamp": "2025-09-30T11:55:54.727101"
+    },
+    "files": [
+      {
+        "filename": "0cd4d3e9-8f0f-4712-893b-be5084a8e3c12721522547909852212.mp4",
+        "file_type": "video",
+        "file_size": 4064635,
+        "saved_filename": "fc5b93b1-d6f4-4197-a79c-9edee08fd4b7.mp4",
+        "file_path": "data\\uploads\\videos\\fc5b93b1-d6f4-4197-a79c-9edee08fd4b7.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "8fa0d355-fbac-4de3-879d-4cd57b0bed22",
+    "timestamp_received": "2025-09-30T12:00:17.148395",
+    "location": {
+      "latitude": 31.352045,
+      "longitude": 27.2505667
+    },
+    "incident": {
+      "description": ".",
+      "incident_type": "other",
+      "is_anonymous": false,
+      "timestamp": "2025-09-30T11:59:38.462169"
+    },
+    "files": [
+      {
+        "filename": "2a005887-89a8-4101-910c-a3ec3ff24e6a1354313005412420621.mp4",
+        "file_type": "video",
+        "file_size": 3132055,
+        "saved_filename": "efc68d2e-3c18-4978-b88a-159b71b9f488.mp4",
+        "file_path": "data\\uploads\\videos\\efc68d2e-3c18-4978-b88a-159b71b9f488.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "f701c133-6c3a-435b-b184-50e68996031b",
+    "timestamp_received": "2025-09-30T14:46:53.326910",
+    "location": {
+      "latitude": 31.3521411,
+      "longitude": 27.2505977
+    },
+    "incident": {
+      "description": ".",
+      "incident_type": "other",
+      "is_anonymous": false,
+      "timestamp": "2025-09-30T14:46:24.516750"
+    },
+    "files": [
+      {
+        "filename": "c4c60beb-b668-4b26-b995-995e97219454280449936842490237.mp4",
+        "file_type": "video",
+        "file_size": 941355,
+        "saved_filename": "d83e172d-1cee-4fb5-830a-893ce8b21e66.mp4",
+        "file_path": "data\\uploads\\videos\\d83e172d-1cee-4fb5-830a-893ce8b21e66.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "9fba54c7-6913-4a69-b073-3d81a27c9be4",
+    "timestamp_received": "2025-09-30T15:47:30.686851",
+    "location": {
+      "latitude": 31.3521911,
+      "longitude": 27.2506284
+    },
+    "incident": {
+      "description": "لم يتم تقديم وصف",
+      "incident_type": "other",
+      "is_anonymous": true,
+      "timestamp": "2025-09-30T15:46:22.175838"
+    },
+    "files": [
+      {
+        "filename": "855a1a65-b7b6-4c0e-9320-97fb6394d83f4393390798745856337.mp4",
+        "file_type": "video",
+        "file_size": 877020,
+        "saved_filename": "e5d4c0b9-a5ea-4e6a-bedc-d5cea4b724c9.mp4",
+        "file_path": "data\\uploads\\videos\\e5d4c0b9-a5ea-4e6a-bedc-d5cea4b724c9.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "97b201b4-7184-4c09-bf13-42544e760ef9",
+    "timestamp_received": "2025-09-30T15:53:22.549934",
+    "location": {
+      "latitude": 31.352186,
+      "longitude": 27.2506219
+    },
+    "incident": {
+      "description": "وصف ",
+      "incident_type": "other",
+      "is_anonymous": true,
+      "timestamp": "2025-09-30T15:52:19.503322"
+    },
+    "files": [
+      {
+        "filename": "84bdcb2e-5ed3-406c-984c-076fbff3037d1924010918792778621.mp4",
+        "file_type": "video",
+        "file_size": 1458000,
+        "saved_filename": "d24a5ae8-42b6-427a-a8c8-af6d061c4c26.mp4",
+        "file_path": "data\\uploads\\videos\\d24a5ae8-42b6-427a-a8c8-af6d061c4c26.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "a73c4e56-680e-406c-b033-f4f142d836a0",
+    "timestamp_received": "2025-09-30T16:08:51.626015",
+    "location": {
+      "latitude": 31.3520907,
+      "longitude": 27.2505969
+    },
+    "incident": {
+      "description": "وصف",
+      "incident_type": "other",
+      "is_anonymous": true,
+      "timestamp": "2025-09-30T16:07:50.983786"
+    },
+    "files": [
+      {
+        "filename": "b62aa48d-a092-4f14-b8d3-c2fe8c3d78d67111115041894291841.mp4",
+        "file_type": "video",
+        "file_size": 2135601,
+        "saved_filename": "5b0a8da7-d2f3-4dc8-8d59-bf7f827e5c93.mp4",
+        "file_path": "data\\uploads\\videos\\5b0a8da7-d2f3-4dc8-8d59-bf7f827e5c93.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "9ab78b02-3ac0-4c6f-b329-084163db99a9",
+    "timestamp_received": "2025-09-30T17:57:53.109263",
+    "location": {
+      "latitude": 31.352209,
+      "longitude": 27.250608
+    },
+    "incident": {
+      "description": ".",
+      "incident_type": "other",
+      "is_anonymous": false,
+      "timestamp": "2025-09-30T17:57:07.696219"
+    },
+    "files": [
+      {
+        "filename": "0fc887dd-c755-4f19-beaf-197a7c01a35f4409184975276546677.jpg",
+        "file_type": "photo",
+        "file_size": 4323206,
+        "saved_filename": "ac0e18ba-4e35-48b3-adf3-352f04c4724e.jpg",
+        "file_path": "data\\uploads\\images\\ac0e18ba-4e35-48b3-adf3-352f04c4724e.jpg"
+      }
+    ]
+  }
+]
