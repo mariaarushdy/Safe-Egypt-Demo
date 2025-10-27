@@ -219,7 +219,7 @@ def get_gemini_client():
 
 #         General Rules:
 #         - Always output valid JSON, no extra text.
-#         - category: one of [Violence, Accident, Utility, Illegal Activity].
+#         - category: one of [Violence, Accident, Utility, Illegal Activity, Clear].
 #         - title: maximum 3 words, must summarize the event.
 #         - description: exactly 2 short sentences summarizing what happened.
 #         - severity: one of [Low, Medium, High].
@@ -327,7 +327,7 @@ def analyze_video_with_polling_return_data(video_path: str, address: str, timest
         The timestamp of the incident is: {timestamp}.
         General Rules:
         - Always output valid JSON, no extra text.
-        - category: one of [Violence, Accident, Utility, Illegal Activity].
+        - category: one of [Violence, Accident, Utility, Illegal Activity, Clear].
         - title: maximum 3 words, must summarize the event.
         - description: exactly 2 short sentences summarizing what happened.
         - severity: one of [Low, Medium, High].
