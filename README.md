@@ -118,7 +118,7 @@ This will provide you with a public URL (e.g., `https://abc123.ngrok.io`) that y
 ### Step 3: Setup Authority Dashboard
 ```bash
 # Navigate to dashboard directory
-cd dashboard/aman-alwatan-al-aan
+cd dashboard/
 
 # Install dependencies
 npm install
@@ -225,7 +225,7 @@ static const String baseUrl = 'https://your-ngrok-url.ngrok.io';
 ```
 
 ### Dashboard Configuration
-Edit `dashboard/aman-alwatan-al-aan/src/lib/api.ts` to modify:
+Edit `dashboard/src/lib/api.ts` to modify:
 - API endpoints (use your ngrok URL for external access)
 - Polling intervals for real-time updates
 - Map settings and styles
@@ -249,7 +249,7 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8000
 
 ### Dashboard Development
 ```bash
-cd dashboard/aman-alwatan-al-aan
+cd dashboard/
 # Install dependencies
 npm install
 
@@ -283,7 +283,7 @@ The system supports:
 
 Translation files are located in:
 - Mobile: `safe_egypt_v2/lib/assets/translations/`
-- Dashboard: `dashboard/aman-alwatan-al-aan/src/locales/`
+- Dashboard: `dashboard/src/locales/`
 
 ## 📊 API Documentation
 
