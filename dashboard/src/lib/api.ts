@@ -1,5 +1,8 @@
 // API configuration and service functions
-const API_BASE_URL = 'https://unnacreous-jameson-diacidic.ngrok-free.dev';
+// Change this to your backend URL:
+// - For local development: 'http://localhost:8000'
+// - For ngrok: 'https://your-ngrok-url.ngrok-free.dev'
+const API_BASE_URL = 'http://localhost:8000';
 
 export interface IncidentLocation {
   address: string;

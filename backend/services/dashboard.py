@@ -14,7 +14,11 @@ from fastapi import HTTPException
 from typing import Dict, Any, List, Optional
 import json
 import os
+import logging
 from datetime import datetime, timedelta
+from models.db_helper import get_all_incidents_from_db, update_incident_status
+
+logger = logging.getLogger(__name__)
 
 # TODO: Add dashboard service functions here
 # Examples:
@@ -27,20 +31,10 @@ def get_incidents_summary_service() -> Dict[str, Any]:
         Dict containing list of incidents with essential fields
     """
     try:
-        # Path to the analysed incidents file
-        incidents_file_path = os.path.join("data", "analysed_incidents.json")
-        
-        # Check if file exists
-        if not os.path.exists(incidents_file_path):
-            return {
-                "status": "error",
-                "message": "Analysed incidents file not found",
-                "incidents": []
-            }
-        
-        # Read the incidents data
-        with open(incidents_file_path, 'r', encoding='utf-8') as file:
-            incidents_data = json.load(file)
+        logger.info("Fetching incidents from database...")
+        # Get all incidents from database
+        incidents_data = get_all_incidents_from_db()
+        logger.info(f"Retrieved {len(incidents_data)} incidents from database")
         
         # Extract required fields for each incident
         incidents_summary = []
@@ -53,15 +47,16 @@ def get_incidents_summary_service() -> Dict[str, Any]:
                 "verified": incident.get("verified", "Unverified"),
                 "incident_id": incident.get("incident_id", ""),
                 "timestamp": incident.get("timestamp", ""),
-                "status": incident.get("status", "pending"),  # Adding status as pending as requested
+                "status": incident.get("status", "pending"),
                 "location": {
-                    "address": incident.get("location", {}).get("address", "Unknown location"),
-                    "latitude": incident.get("location", {}).get("latitude", 0.0),
-                    "longitude": incident.get("location", {}).get("longitude", 0.0)
+                    "address": incident.get("address", "Unknown location"),
+                    "latitude": incident.get("latitude", 0.0),
+                    "longitude": incident.get("longitude", 0.0)
                 }
             }
             incidents_summary.append(incident_summary)
         
+        logger.info(f"Successfully formatted {len(incidents_summary)} incidents for dashboard")
         return {
             "status": "success",
             "message": f"Retrieved {len(incidents_summary)} incidents",
@@ -69,13 +64,8 @@ def get_incidents_summary_service() -> Dict[str, Any]:
             "incidents": incidents_summary
         }
         
-    except json.JSONDecodeError as e:
-        return {
-            "status": "error",
-            "message": f"Error parsing incidents file: {str(e)}",
-            "incidents": []
-        }
     except Exception as e:
+        logger.error(f"Error in get_incidents_summary_service: {str(e)}", exc_info=True)
         return {
             "status": "error",
             "message": f"Error reading incidents: {str(e)}",
@@ -204,44 +194,66 @@ def import_data_service(
 
 def get_incident_by_id_service(incident_id: str) -> Dict[str, Any]:
     """
-    Get detailed incident information by ID from analysed incidents data
+    Get detailed incident information by ID from database
     
     Args:
         incident_id: The unique incident identifier
         
     Returns:
-        Dict containing complete analysed incident information including
+        Dict containing complete incident information including
         category, title, severity, detected events, location, and all other analysis results
     """
     try:
-        # Read analysed incident data (primary source)
-        analysed_file_path = os.path.join("data", "analysed_incidents.json")
+        # Get all incidents from database (we'll filter for the one we need)
+        all_incidents = get_all_incidents_from_db()
         
-        # Check if analysed incidents file exists
-        if not os.path.exists(analysed_file_path):
-            raise HTTPException(status_code=404, detail="Analysed incidents file not found")
-        
-        # Read analysed incident data
-        with open(analysed_file_path, 'r', encoding='utf-8') as file:
-            analysed_incidents = json.load(file)
-        
-        # Find the incident in analysed data (primary source)
-        analysed_incident = None
-        for incident in analysed_incidents:
+        # Find the specific incident
+        found_incident = None
+        for incident in all_incidents:
             if incident.get("incident_id") == incident_id:
-                analysed_incident = incident
+                found_incident = incident
                 break
         
-        if not analysed_incident:
-            raise HTTPException(status_code=404, detail=f"Incident with ID {incident_id} not found in analysed data")
+        if not found_incident:
+            raise HTTPException(status_code=404, detail=f"Incident with ID {incident_id} not found")
         
+        # Build the incident_info object with location nested properly
+        incident_info = {
+            "incident_id": found_incident.get("incident_id"),
+            "category": found_incident.get("category"),
+            "title": found_incident.get("title"),
+            "description": found_incident.get("description"),
+            "severity": found_incident.get("severity"),
+            "verified": found_incident.get("verified"),
+            "status": found_incident.get("status", "pending"),
+            "timestamp": found_incident.get("timestamp"),
+            "violence_type": found_incident.get("violence_type"),
+            "weapon": found_incident.get("weapon"),
+            "site_description": found_incident.get("site_description"),
+            "number_of_people": found_incident.get("number_of_people"),
+            "description_of_people": found_incident.get("description_of_people"),
+            "detailed_description_for_the_incident": found_incident.get("detailed_description_for_the_incident"),
+            "accident_type": found_incident.get("accident_type"),
+            "vehicles_machines_involved": found_incident.get("vehicles_machines_involved"),
+            "utility_type": found_incident.get("utility_type"),
+            "extent_of_impact": found_incident.get("extent_of_impact"),
+            "duration": found_incident.get("duration"),
+            "illegal_type": found_incident.get("illegal_type"),
+            "items_involved": found_incident.get("items_involved"),
+            "detected_events": found_incident.get("detected_events", []),
+            "real_files": found_incident.get("real_files", []),
+            "location": {
+                "address": found_incident.get("address"),
+                "latitude": found_incident.get("latitude"),
+                "longitude": found_incident.get("longitude")
+            }
+        }
         
-        
-        # Build response with analysed incident data as primary info
+        # Build response
         response = {
             "status": "success",
             "incident_id": incident_id,
-            "incident_info": analysed_incident  # Return analysed data as main info
+            "incident_info": incident_info
         }
         
         return response
@@ -249,8 +261,6 @@ def get_incident_by_id_service(incident_id: str) -> Dict[str, Any]:
     except HTTPException:
         # Re-raise HTTP exceptions
         raise
-    except json.JSONDecodeError as e:
-        raise HTTPException(status_code=500, detail=f"Error parsing incident files: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving incident: {str(e)}")
 
@@ -267,35 +277,23 @@ def update_incident_status_service(incident_id: str, status: str) -> Dict[str, A
         Dict containing success message and updated incident info
     """
     try:
-        # Path to the analysed incidents file
-        incidents_file_path = os.path.join("data", "analysed_incidents.json")
+        # Update status in database
+        success = update_incident_status(incident_id, status)
         
-        # Check if file exists
-        if not os.path.exists(incidents_file_path):
-            raise HTTPException(status_code=404, detail="Analysed incidents file not found")
+        if not success:
+            raise HTTPException(status_code=500, detail=f"Failed to update incident status in database")
         
-        # Read the incidents data
-        with open(incidents_file_path, 'r', encoding='utf-8') as file:
-            incidents_data = json.load(file)
-        
-        # Find the incident to update
-        incident_found = False
+        # Get the updated incident to return its info
+        all_incidents = get_all_incidents_from_db()
         updated_incident = None
         
-        for i, incident in enumerate(incidents_data):
+        for incident in all_incidents:
             if incident.get("incident_id") == incident_id:
-                # Update the status
-                incidents_data[i]["status"] = status
-                updated_incident = incidents_data[i]
-                incident_found = True
+                updated_incident = incident
                 break
         
-        if not incident_found:
+        if not updated_incident:
             raise HTTPException(status_code=404, detail=f"Incident with ID {incident_id} not found")
-        
-        # Write the updated data back to the file
-        with open(incidents_file_path, 'w', encoding='utf-8') as file:
-            json.dump(incidents_data, file, ensure_ascii=False, indent=2)
         
         return {
             "status": "success",
@@ -314,7 +312,5 @@ def update_incident_status_service(incident_id: str, status: str) -> Dict[str, A
     except HTTPException:
         # Re-raise HTTP exceptions
         raise
-    except json.JSONDecodeError as e:
-        raise HTTPException(status_code=500, detail=f"Error parsing incidents file: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating incident status: {str(e)}")
