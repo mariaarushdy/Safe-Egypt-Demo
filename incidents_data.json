@@ -1,0 +1,255 @@
+[
+  {
+    "incident_id": "4bce2e0b-3835-4fad-af50-548c7012f2d7",
+    "timestamp_received": "2025-10-10T16:31:44.659397",
+    "location": {
+      "latitude": 31.3519324,
+      "longitude": 27.2505666
+    },
+    "incident": {
+      "description": "No description provided",
+      "incident_type": "other",
+      "is_anonymous": false,
+      "timestamp": "2025-10-10T16:31:12.243266"
+    },
+    "files": [
+      {
+        "filename": "5d8a4c67-7915-421e-b32b-250aec1b24647315310491393084744.mp4",
+        "file_type": "video",
+        "file_size": 765554,
+        "saved_filename": "844a729f-5aa2-4cf0-a36d-9cc3a2af6bd6.mp4",
+        "file_path": "data\\uploads\\videos\\844a729f-5aa2-4cf0-a36d-9cc3a2af6bd6.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "1c87c548-09cd-4958-9a81-497ba71e8529",
+    "timestamp_received": "2025-10-10T16:38:04.802631",
+    "location": {
+      "latitude": 31.3520392,
+      "longitude": 27.2505358
+    },
+    "incident": {
+      "description": "No description provided",
+      "incident_type": "other",
+      "is_anonymous": false,
+      "timestamp": "2025-10-10T16:37:42.834703"
+    },
+    "files": [
+      {
+        "filename": "77d532dc-1f5a-461f-ab9e-c8b28350dd8e7217897387143008706.jpg",
+        "file_type": "photo",
+        "file_size": 1492774,
+        "saved_filename": "28de79fa-03b8-40dd-bf7c-7b1754418037.jpg",
+        "file_path": "data\\uploads\\images\\28de79fa-03b8-40dd-bf7c-7b1754418037.jpg"
+      }
+    ]
+  },
+  {
+    "incident_id": "73647efe-63b1-45e1-8188-a0b810ef040c",
+    "timestamp_received": "2025-10-29T04:36:54.880910",
+    "location": {
+      "latitude": 30.0444,
+      "longitude": 31.2357
+    },
+    "incident": {
+      "description": "null",
+      "incident_type": "Violence",
+      "is_anonymous": true,
+      "timestamp": "2025-10-29T01:36:52.897675"
+    },
+    "files": [
+      {
+        "filename": "Films & TV 2021-02-22 09-25-56_Trim.mp4",
+        "file_type": "video",
+        "file_size": 2215286,
+        "saved_filename": "57296420-e47c-4239-889e-6222d91c2d7f.mp4",
+        "file_path": "data\\uploads\\videos\\57296420-e47c-4239-889e-6222d91c2d7f.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "59c1742b-7bdd-4782-b60e-c04d2a2e27af",
+    "timestamp_received": "2025-10-29T04:38:29.483248",
+    "location": {
+      "latitude": 30.0444,
+      "longitude": 31.2357
+    },
+    "incident": {
+      "description": "null",
+      "incident_type": "Violence",
+      "is_anonymous": true,
+      "timestamp": "2025-10-29T01:38:29.444234"
+    },
+    "files": [
+      {
+        "filename": "Films & TV 2021-02-22 09-25-56_Trim.mp4",
+        "file_type": "video",
+        "file_size": 2215286,
+        "saved_filename": "5bda9ddb-b49d-4314-b90c-2b411b9f1c8b.mp4",
+        "file_path": "data\\uploads\\videos\\5bda9ddb-b49d-4314-b90c-2b411b9f1c8b.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "eac110b2-8537-496a-9af7-7d578d6ad50c",
+    "timestamp_received": "2025-10-29T11:26:41.681783",
+    "location": {
+      "latitude": 30.0444,
+      "longitude": 31.2357
+    },
+    "incident": {
+      "description": "null",
+      "incident_type": "Violence",
+      "is_anonymous": true,
+      "timestamp": "2025-10-29T08:26:41.623262"
+    },
+    "files": [
+      {
+        "filename": "Films & TV 2021-02-22 09-25-56_Trim.mp4",
+        "file_type": "video",
+        "file_size": 2215286,
+        "saved_filename": "8310014a-9ce6-4dd2-9749-33638db76ecb.mp4",
+        "file_path": "data\\uploads\\videos\\8310014a-9ce6-4dd2-9749-33638db76ecb.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "c6402bfa-c2ae-480d-b54b-cb5e8107ba21",
+    "timestamp_received": "2025-10-29T11:36:34.163740",
+    "location": {
+      "latitude": 30.0444,
+      "longitude": 31.2357
+    },
+    "incident": {
+      "description": "null",
+      "incident_type": "Violence",
+      "is_anonymous": true,
+      "timestamp": "2025-10-29T08:36:34.129729"
+    },
+    "files": [
+      {
+        "filename": "Films & TV 2021-02-22 09-25-56_Trim.mp4",
+        "file_type": "video",
+        "file_size": 2215286,
+        "saved_filename": "67ad6ad4-8003-4033-82d2-21769e5c9b5b.mp4",
+        "file_path": "data\\uploads\\videos\\67ad6ad4-8003-4033-82d2-21769e5c9b5b.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "b4ccef77-331e-4ce7-b11a-7dd993daaabd",
+    "timestamp_received": "2025-10-29T11:42:38.619310",
+    "location": {
+      "latitude": 30.0444,
+      "longitude": 31.2357
+    },
+    "incident": {
+      "description": "null",
+      "incident_type": "Violence",
+      "is_anonymous": true,
+      "timestamp": "2025-10-29T08:42:38.587310"
+    },
+    "files": [
+      {
+        "filename": "Films & TV 2021-02-22 09-25-56_Trim.mp4",
+        "file_type": "video",
+        "file_size": 2215286,
+        "saved_filename": "33c9e757-c55f-4f3b-9fdb-0bdb0d10d549.mp4",
+        "file_path": "data\\uploads\\videos\\33c9e757-c55f-4f3b-9fdb-0bdb0d10d549.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "befde5dc-2cb7-4364-b14f-1cd2271bdc23",
+    "timestamp_received": "2025-10-29T11:49:41.452142",
+    "location": {
+      "latitude": 30.0444,
+      "longitude": 31.2357
+    },
+    "incident": {
+      "description": "null",
+      "incident_type": "Violence",
+      "is_anonymous": true,
+      "timestamp": "2025-10-29T08:49:41.421141"
+    },
+    "files": [
+      {
+        "filename": "Films & TV 2021-02-22 09-25-56_Trim.mp4",
+        "file_type": "video",
+        "file_size": 2215286,
+        "saved_filename": "cf0f3848-5fba-4d4a-b29f-9bbb4deae230.mp4",
+        "file_path": "data\\uploads\\videos\\cf0f3848-5fba-4d4a-b29f-9bbb4deae230.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "d219cc43-a474-46d7-9d22-87cdeb055ab1",
+    "timestamp_received": "2025-10-29T12:37:15.020604",
+    "location": {
+      "latitude": 30.0444,
+      "longitude": 31.2357
+    },
+    "incident": {
+      "description": "null",
+      "incident_type": "Violence",
+      "is_anonymous": true,
+      "timestamp": "2025-10-29T09:37:14.993604"
+    },
+    "files": [
+      {
+        "filename": "Films & TV 2021-02-22 09-25-56_Trim.mp4",
+        "file_type": "video",
+        "file_size": 2215286,
+        "saved_filename": "ead67c0f-6050-44dd-aa75-1eceeb54d11a.mp4",
+        "file_path": "data\\uploads\\videos\\ead67c0f-6050-44dd-aa75-1eceeb54d11a.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "731dca30-4f00-48d1-affc-d5ccc923b418",
+    "timestamp_received": "2025-10-29T12:57:52.745597",
+    "location": {
+      "latitude": 30.0444,
+      "longitude": 31.2357
+    },
+    "incident": {
+      "description": "null",
+      "incident_type": "Violence",
+      "is_anonymous": true,
+      "timestamp": "2025-10-29T09:57:52.705595"
+    },
+    "files": [
+      {
+        "filename": "Films & TV 2021-02-22 09-25-56_Trim.mp4",
+        "file_type": "video",
+        "file_size": 2215286,
+        "saved_filename": "569e8ebd-7ce6-4553-bd17-44fc784ad9cf.mp4",
+        "file_path": "data\\uploads\\videos\\569e8ebd-7ce6-4553-bd17-44fc784ad9cf.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "fdcc9ad2-9e32-45ff-a364-2fb26b5b3eb0",
+    "timestamp_received": "2025-10-29T13:03:42.552863",
+    "location": {
+      "latitude": 30.0444,
+      "longitude": 31.2357
+    },
+    "incident": {
+      "description": "null",
+      "incident_type": "Violence",
+      "is_anonymous": true,
+      "timestamp": "2025-10-29T10:03:42.518905"
+    },
+    "files": [
+      {
+        "filename": "Films & TV 2021-02-22 09-25-56_Trim.mp4",
+        "file_type": "video",
+        "file_size": 2215286,
+        "saved_filename": "919e0cc8-efbe-4148-9dfb-963c4cad8156.mp4",
+        "file_path": "data\\uploads\\videos\\919e0cc8-efbe-4148-9dfb-963c4cad8156.mp4"
+      }
+    ]
+  }
+]

@@ -1,0 +1,131 @@
+{
+  "app_name": "Safe Egypt",
+  "app_tagline": "Report danger. Save lives.",
+  
+  "onboarding": {
+    "back": "Back",
+    "next": "Next",
+    "skip": "Skip",
+    "report_instantly": "Report Instantly",
+    "report_instantly_desc": "Quickly report safety incidents with photos, videos, or audio recordings.",
+    "ai_verifies": "AI Verifies",
+    "ai_verifies_desc": "Our advanced AI system analyzes and verifies reports for accuracy and urgency.",
+    "authorities_respond": "Authorities Respond",
+    "authorities_respond_desc": "Verified incidents are immediately forwarded to relevant emergency services."
+  },
+  
+  "home": {
+    "map_view": "Map View",
+    "list_view": "List View",
+    "nearby_incidents": "Nearby Incidents",
+    "recent_alerts": "Recent Alerts",
+    "view_all": "View All",
+    "report_incident": "Report Incident"
+  },
+  
+  "incidents": {
+    "building_fire": "Building Fire",
+    "building_fire_desc": "Fire reported at residential building",
+    "traffic_accident": "Traffic Accident",
+    "traffic_accident_desc": "Multi-vehicle collision on highway",
+    "suspicious_activity": "Suspicious Activity",
+    "suspicious_activity_desc": "Unusual behavior reported in area",
+    "medical_emergency": "Medical Emergency",
+    "medical_emergency_desc": "Medical assistance required",
+    "downtown_cairo": "Downtown Cairo",
+    "ring_road": "Ring Road",
+    "new_cairo": "New Cairo",
+    "maadi": "Maadi",
+    "severity_high": "High",
+    "severity_medium": "Medium",
+    "severity_low": "Low",
+    "verified": "Verified",
+    "unverified": "Unverified",
+    "minutes_ago": "min ago",
+    "hours_ago": "hours ago",
+    "fire": "Fire",
+    "violence_crime": "Violence/Crime",
+    "other": "Other",
+    "all": "All",
+    "accident": "Accident"
+  },
+  
+  "report": {
+    "incident_type": "Incident Type",
+    "select_incident_type": "Select Incident Type",
+    "description": "Description",
+    "description_optional": "Description (Optional)",
+    "location": "Location",
+    "location_description": "Location Description (Optional)",
+    "current_location_used": "Current location will be used",
+    "add_media": "Add Media",
+    "add_media_evidence": "Add Media Evidence",
+    "submit_report": "Submit Report",
+    "submit_incident_report": "Submit Incident Report",
+    "cancel": "Cancel",
+    "report_incident": "Report Incident",
+    "report_anonymously": "Report Anonymously",
+    "identity_not_shared": "Your identity will not be shared",
+    "describe_what_happened": "Describe what happened...",
+    "media_evidence": "Media Evidence",
+    "camera": "Camera",
+    "gallery": "Gallery",
+    "pick_multiple_files": "Pick Multiple Files",
+    "requesting_permissions": "Requesting permissions...",
+    "submitting": "Submitting...",
+    "location_coordinates": "Location",
+    "please_select_incident_type": "Please select an incident type",
+    "no_description_provided": "No description provided",
+    "take_photo": "Take Photo",
+    "record_video": "Record Video"
+  },
+  
+  "location": {
+    "showing_local_only": "Showing incidents from your city only. Tap the location icon above to see all cities.",
+    "show_all": "Show All",
+    "local_only": "Local only"
+  },
+  
+  "common": {
+    "ok": "OK",
+    "cancel": "Cancel",
+    "yes": "Yes",
+    "no": "No",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success"
+  },
+  
+  "errors": {
+    "permissions_required": "Permissions Required",
+    "grant_permissions_message": "Please grant camera, storage, and location permissions to report incidents.",
+    "grant_camera_storage_permissions": "Please grant camera and storage permissions first.",
+    "permission_error": "Permission Error",
+    "failed_request_permissions": "Failed to request permissions",
+    "location_error": "Location Error",
+    "location_error_prefix": "Location error:",
+    "failed_get_location": "Failed to get current location",
+    "camera_error": "Camera Error",
+    "failed_capture_photo": "Failed to capture photo",
+    "gallery_error": "Gallery Error",
+    "failed_pick_gallery": "Failed to pick from gallery",
+    "file_error": "File Error",
+    "failed_pick_files": "Failed to pick files",
+    "validation_error": "Validation Error",
+    "enter_description": "Please enter a description.",
+    "location_required": "Location is required. Please try again.",
+    "submission_failed": "Submission Failed",
+    "submission_error": "Submission Error",
+    "submit_report_error": "Error submitting report:",
+    "failed_submit_incident": "Failed to submit incident"
+  },
+  
+  "success": {
+    "incident_reported": "Incident Reported Successfully",
+    "incident_id": "Incident ID",
+    "media_files_uploaded": "Media files uploaded"
+  }
+}

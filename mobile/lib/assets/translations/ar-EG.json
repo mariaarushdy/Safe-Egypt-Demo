@@ -1,0 +1,132 @@
+{
+  "app_name": "مصر الآمنة",
+  "app_tagline": "أبلغ عن الخطر. أنقذ الأرواح.",
+  
+  "onboarding": {
+    "back": "رجوع",
+    "next": "التالي",
+    "skip": "تخطي",
+    "report_instantly": "أبلغ فوراً",
+    "report_instantly_desc": "أبلغ بسرعة عن حوادث السلامة بالصور والفيديو أو التسجيلات الصوتية.",
+    "ai_verifies": "التحقق بالذكاء الاصطناعي",
+    "ai_verifies_desc": "نظام الذكاء الاصطناعي المتطور يحلل ويتحقق من التقارير للدقة والإلحاح.",
+    "authorities_respond": "استجابة السلطات",
+    "authorities_respond_desc": "يتم إرسال الحوادث المتحقق منها فوراً إلى خدمات الطوارئ المختصة."
+  },
+  
+  "home": {
+    "map_view": "عرض الخريطة",
+    "list_view": "عرض القائمة",
+    "nearby_incidents": "الحوادث القريبة",
+    "recent_alerts": "التنبيهات الأخيرة",
+    "view_all": "عرض الكل",
+    "report_incident": "أبلغ عن حادثة"
+  },
+  
+  "incidents": {
+    "building_fire": "حريق مبنى",
+    "building_fire_desc": "تم الإبلاغ عن حريق في مبنى سكني",
+    "traffic_accident": "حادث مروري",
+    "traffic_accident_desc": "تصادم متعدد المركبات على الطريق السريع",
+    "suspicious_activity": "نشاط مشبوه",
+    "suspicious_activity_desc": "تم الإبلاغ عن سلوك غير عادي في المنطقة",
+    "medical_emergency": "طوارئ طبية",
+    "medical_emergency_desc": "مطلوب مساعدة طبية",
+    "downtown_cairo": "وسط القاهرة",
+    "ring_road": "الطريق الدائري",
+    "new_cairo": "القاهرة الجديدة",
+    "maadi": "المعادي",
+    "severity_high": "عالي",
+    "severity_medium": "متوسط",
+    "severity_low": "منخفض",
+    "verified": "متحقق منه",
+    "unverified": "غير متحقق منه",
+    "minutes_ago": "دقيقة مضت",
+    "hours_ago": "ساعة مضت",
+    "fire": "حريق",
+    "violence_crime": "عنف/جريمة",
+    "other": "أخرى",
+    "all": "الكل",
+    "accident": "حادث"
+  },
+  
+  "report": {
+    "incident_type": "نوع الحادثة",
+    "select_incident_type": "اختر نوع الحادثة",
+    "description": "الوصف",
+    "description_optional": "الوصف (اختياري)",
+    "location": "الموقع",
+    "location_description": "وصف الموقع (اختياري)",
+    "current_location_used": "سيتم استخدام الموقع الحالي",
+    "add_media": "إضافة وسائط",
+    "add_media_evidence": "إضافة أدلة وسائط",
+    "submit_report": "إرسال التقرير",
+    "submit_incident_report": "إرسال تقرير الحادثة",
+    "cancel": "إلغاء",
+    "report_incident": "الإبلاغ عن حادثة",
+    "report_anonymously": "أبلغ بشكل مجهول",
+    "identity_not_shared": "لن يتم مشاركة هويتك",
+    "describe_what_happened": "اصف ما حدث...",
+    "media_evidence": "أدلة الوسائط",
+    "camera": "الكاميرا",
+    "gallery": "المعرض",
+    "pick_multiple_files": "اختيار ملفات متعددة",
+    "requesting_permissions": "طلب الأذونات...",
+    "submitting": "إرسال...",
+    "location_coordinates": "الموقع",
+    "please_select_incident_type": "يرجى اختيار نوع الحادثة",
+    "take_photo": "التقط صورة",
+    "record_video": "تسجيل فيديو",
+    "no_description_provided": "لم يتم تقديم وصف"
+  },
+  
+  "location": {
+    "showing_local_only": "عرض الحوادث من مدينتك فقط. اضغط على أيقونة الموقع أعلاه لعرض جميع المدن.",
+    "show_all": "عرض الكل",
+    "local_only": "المحلية فقط"
+  },
+  
+  "common": {
+    "ok": "موافق",
+    "cancel": "إلغاء",
+    "yes": "نعم",
+    "no": "لا",
+    "save": "حفظ",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "loading": "جاري التحميل...",
+    "error": "خطأ",
+    "success": "نجح",
+    "Media uploaded successfully": "تم رفع الوسائط بنجاح"
+  },
+  
+  "errors": {
+    "permissions_required": "الأذونات مطلوبة",
+    "grant_permissions_message": "يرجى منح أذونات الكاميرا والتخزين والموقع للإبلاغ عن الحوادث.",
+    "grant_camera_storage_permissions": "يرجى منح أذونات الكاميرا والتخزين أولاً.",
+    "permission_error": "خطأ في الإذن",
+    "failed_request_permissions": "فشل في طلب الأذونات",
+    "location_error": "خطأ في الموقع",
+    "location_error_prefix": "خطأ في الموقع:",
+    "failed_get_location": "فشل في الحصول على الموقع الحالي",
+    "camera_error": "خطأ في الكاميرا",
+    "failed_capture_photo": "فشل في التقاط الصورة",
+    "gallery_error": "خطأ في المعرض",
+    "failed_pick_gallery": "فشل في الاختيار من المعرض",
+    "file_error": "خطأ في الملف",
+    "failed_pick_files": "فشل في اختيار الملفات",
+    "validation_error": "خطأ في التحقق",
+    "enter_description": "يرجى إدخال وصف.",
+    "location_required": "الموقع مطلوب. يرجى المحاولة مرة أخرى.",
+    "submission_failed": "فشل في الإرسال",
+    "submission_error": "خطأ في الإرسال",
+    "submit_report_error": "خطأ في إرسال التقرير:",
+    "failed_submit_incident": "فشل في إرسال الحادثة"
+  },
+  
+  "success": {
+    "incident_reported": "تم الإبلاغ عن الحادثة بنجاح",
+    "incident_id": "رقم الحادثة",
+    "media_files_uploaded": "تم رفع ملفات الوسائط"
+  }
+}

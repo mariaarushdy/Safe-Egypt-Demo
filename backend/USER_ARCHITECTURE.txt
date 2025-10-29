@@ -1,0 +1,384 @@
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                    SAFE EGYPT - USER AUTHENTICATION SYSTEM                     ║
+║                              Architecture Overview                              ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              USER TYPES & ROLES                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────┐              ┌──────────────────────────────────┐
+│     MOBILE USERS         │              │      DASHBOARD USERS             │
+│   (user_type=mobile)     │              │    (user_type=dashboard)         │
+├──────────────────────────┤              ├──────────────────────────────────┤
+│                          │              │                                  │
+│  Role: USER              │              │  Role: ADMIN                     │
+│  ✓ Report incidents      │              │  ✓ Full system access            │
+│  ✓ Upload media          │              │  ✓ Manage all users              │
+│  ✓ View own reports      │              │  ✓ System configuration          │
+│  ✓ Get notifications     │              │  ✓ All analytics                 │
+│  ✓ Update profile        │              │  ✓ Audit logs                    │
+│                          │              │                                  │
+│  Registration:           │              │  Role: MODERATOR                 │
+│  • Self-service          │              │  ✓ View all incidents            │
+│  • Email verification    │              │  ✓ Verify/reject reports         │
+│  • Phone verification    │              │  ✓ Manage mobile users           │
+│                          │              │  ✓ Update incident status        │
+└──────────────────────────┘              │  ✓ Analytics                     │
+                                          │                                  │
+                                          │  Role: OPERATOR                  │
+                                          │  ✓ View all incidents            │
+                                          │  ✓ Update incident status        │
+                                          │  ✓ Add notes                     │
+                                          │  ✓ Basic analytics               │
+                                          │                                  │
+                                          │  Registration:                   │
+                                          │  • Created by Admin              │
+                                          │  • Auto-verified                 │
+                                          └──────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          AUTHENTICATION FLOW                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+REGISTRATION (Mobile)                      LOGIN (Mobile or Dashboard)
+────────────────────                       ───────────────────────────
+
+1. User submits credentials              1. User submits credentials
+   ↓                                        ↓
+2. Validate input data                   2. Query database for user
+   ↓                                        ↓
+3. Check username/email unique           3. Verify password hash
+   ↓                                        ↓
+4. Hash password (werkzeug)              4. Check user is_active
+   ↓                                        ↓
+5. Insert into database                  5. Update last_login
+   ↓                                        ↓
+6. Generate JWT tokens                   6. Generate JWT tokens
+   • Access Token (24h)                     • Access Token (24h)
+   • Refresh Token (30d)                    • Refresh Token (30d)
+   ↓                                        ↓
+7. Return user + tokens                  7. Return user + tokens
+
+
+PROTECTED REQUEST
+─────────────────
+
+1. Client: Authorization: Bearer <token>
+   ↓
+2. Extract token from header
+   ↓
+3. Verify token signature (JWT)
+   ↓
+4. Check token expiration
+   ↓
+5. Extract payload (user_id, role, etc.)
+   ↓
+6. Query database for user
+   ↓
+7. Verify user is_active
+   ↓
+8. Check permissions (role/user_type)
+   ↓
+9. ✅ Allow request OR ❌ Reject (401/403)
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                             DATABASE SCHEMA                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────────────┐
+│  TABLE: users                                                              │
+├───────────────────────────────────────────────────────────────────────────┤
+│  id                  SERIAL PRIMARY KEY                                    │
+│  username            VARCHAR(100) UNIQUE NOT NULL     [indexed]           │
+│  email               VARCHAR(255) UNIQUE NOT NULL     [indexed]           │
+│  password_hash       VARCHAR(255) NOT NULL                                │
+│  full_name           VARCHAR(255)                                         │
+│  phone_number        VARCHAR(20)                                          │
+│  ┌─────────────────────────────────────────────────────────────────────┐ │
+│  │ user_type        VARCHAR(20) NOT NULL DEFAULT 'mobile'  [indexed]   │ │
+│  │                  • 'mobile'    → Mobile app users                    │ │
+│  │                  • 'dashboard' → Admin/staff users                   │ │
+│  └─────────────────────────────────────────────────────────────────────┘ │
+│  ┌─────────────────────────────────────────────────────────────────────┐ │
+│  │ role             VARCHAR(20) NOT NULL DEFAULT 'user'                 │ │
+│  │                  • 'user'      → Mobile user                         │ │
+│  │                  • 'operator'  → Dashboard viewer                    │ │
+│  │                  • 'moderator' → Dashboard manager                   │ │
+│  │                  • 'admin'     → System administrator                │ │
+│  └─────────────────────────────────────────────────────────────────────┘ │
+│  is_active           BOOLEAN DEFAULT TRUE                                  │
+│  is_verified         BOOLEAN DEFAULT FALSE                                 │
+│  created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP                   │
+│  updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP                   │
+│  last_login          TIMESTAMP                                             │
+└───────────────────────────────────────────────────────────────────────────┘
+         ↑
+         │ (Foreign Key)
+         │
+┌───────────────────────────────────────────────────────────────────────────┐
+│  TABLE: incidents                                                          │
+├───────────────────────────────────────────────────────────────────────────┤
+│  incident_id         UUID PRIMARY KEY                                      │
+│  reporter_id         INT REFERENCES users(id) ← Links to users            │
+│  is_anonymous        BOOLEAN DEFAULT FALSE                                 │
+│  category            TEXT                                                  │
+│  title               TEXT                                                  │
+│  description         TEXT                                                  │
+│  severity            TEXT                                                  │
+│  status              TEXT                                                  │
+│  verified            TEXT                                                  │
+│  detected_events     JSONB                                                 │
+│  timestamp           TIMESTAMP                                             │
+│  location_id         INT REFERENCES locations(id)                          │
+│  ...                 (other incident fields)                               │
+└───────────────────────────────────────────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          JWT TOKEN STRUCTURE                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+ACCESS TOKEN (expires: 24 hours)
+────────────────────────────────
+Header:
+  {
+    "alg": "HS256",
+    "typ": "JWT"
+  }
+
+Payload:
+  {
+    "user_id": 123,
+    "username": "john_doe",
+    "email": "john@example.com",
+    "user_type": "mobile",      ← Determines access method
+    "role": "user",             ← Determines permissions
+    "iat": 1234567890,          ← Issued at
+    "exp": 1234654290           ← Expires at (24h later)
+  }
+
+Signature:
+  HMACSHA256(
+    base64UrlEncode(header) + "." + base64UrlEncode(payload),
+    SECRET_KEY
+  )
+
+
+REFRESH TOKEN (expires: 30 days)
+─────────────────────────────────
+Payload:
+  {
+    "user_id": 123,
+    "username": "john_doe",
+    "email": "john@example.com",
+    "user_type": "mobile",
+    "role": "user",
+    "type": "refresh",          ← Indicates refresh token
+    "iat": 1234567890,
+    "exp": 1237159890           ← Expires at (30d later)
+  }
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           FILE STRUCTURE                                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+backend/
+├── models/
+│   ├── setup_db.py               ✏️  Creates users table + default admin
+│   └── database.py               ✏️  SQLAlchemy User model + enums
+│
+├── services/
+│   ├── auth.py                   ✨  NEW - Authentication service
+│   │   ├── AuthService          → JWT tokens, password hashing
+│   │   ├── UserService          → User CRUD operations
+│   │   └── get_current_user_from_token()
+│   │
+│   ├── USER_AUTH_README.md      📖  Complete documentation
+│   └── ...
+│
+├── test_user_auth.py            ✨  NEW - Comprehensive test script
+├── USER_SYSTEM_SETUP.md         📖  Setup guide
+├── USER_SYSTEM_SUMMARY.md       📖  Quick reference
+├── USER_ARCHITECTURE.txt        📖  This file
+├── env_template.txt             📖  Environment variables template
+├── requirements.txt             ✏️  Added werkzeug + PyJWT
+└── .env                         ⚙️  Your configuration (create this!)
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                            API ENDPOINTS                                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+MOBILE APP ENDPOINTS
+────────────────────
+POST   /api/mobile/register              Create mobile user account
+       Body: {username, email, password, full_name?, phone_number?}
+       Returns: {user, tokens}
+
+POST   /api/mobile/login                 Authenticate mobile user
+       Body: {username, password}
+       Returns: {user, tokens}
+
+GET    /api/mobile/profile               Get user profile
+       Headers: Authorization: Bearer <token>
+       Returns: {user}
+
+PUT    /api/mobile/profile               Update profile
+       Headers: Authorization: Bearer <token>
+       Body: {full_name?, phone_number?}
+
+POST   /api/mobile/change-password       Change password
+       Headers: Authorization: Bearer <token>
+       Body: {old_password, new_password}
+
+POST   /api/mobile/verify-email          Verify email address
+       Headers: Authorization: Bearer <token>
+       Body: {verification_code}
+
+
+DASHBOARD ENDPOINTS
+───────────────────
+POST   /api/dashboard/login              Authenticate dashboard user
+       Body: {username, password}
+       Returns: {user, tokens}
+
+GET    /api/dashboard/profile            Get admin profile
+       Headers: Authorization: Bearer <token>
+       Returns: {user}
+
+POST   /api/dashboard/users              Create dashboard user (admin only)
+       Headers: Authorization: Bearer <token>
+       Body: {username, email, password, full_name, role}
+       Returns: {user}
+
+GET    /api/dashboard/users              List all users (admin/moderator)
+       Headers: Authorization: Bearer <token>
+       Query: ?user_type=mobile&role=user&page=1&limit=20
+       Returns: {users[], total, page, limit}
+
+GET    /api/dashboard/users/:id          Get user details (admin/moderator)
+       Headers: Authorization: Bearer <token>
+       Returns: {user}
+
+PUT    /api/dashboard/users/:id          Update user (admin)
+       Headers: Authorization: Bearer <token>
+       Body: {full_name?, role?, is_active?}
+
+DELETE /api/dashboard/users/:id          Deactivate user (admin)
+       Headers: Authorization: Bearer <token>
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      ROLE PERMISSIONS MATRIX                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Action                         │ User  │ Operator │ Moderator │ Admin │
+                              │(mobile)│(dashboard│(dashboard)│(dashb)│
+──────────────────────────────┼────────┼──────────┼───────────┼───────┤
+Report Incident               │   ✅   │    ❌    │     ❌    │   ❌  │
+View Own Reports              │   ✅   │    ❌    │     ❌    │   ❌  │
+Upload Media                  │   ✅   │    ❌    │     ❌    │   ❌  │
+Receive Notifications         │   ✅   │    ❌    │     ❌    │   ❌  │
+Update Own Profile            │   ✅   │    ✅    │     ✅    │   ✅  │
+──────────────────────────────┼────────┼──────────┼───────────┼───────┤
+View All Incidents            │   ❌   │    ✅    │     ✅    │   ✅  │
+Update Incident Status        │   ❌   │    ✅    │     ✅    │   ✅  │
+Add Notes/Comments            │   ❌   │    ✅    │     ✅    │   ✅  │
+View Analytics                │   ❌   │    ✅    │     ✅    │   ✅  │
+──────────────────────────────┼────────┼──────────┼───────────┼───────┤
+Verify/Reject Reports         │   ❌   │    ❌    │     ✅    │   ✅  │
+Manage Mobile Users           │   ❌   │    ❌    │     ✅    │   ✅  │
+View User Details             │   ❌   │    ❌    │     ✅    │   ✅  │
+──────────────────────────────┼────────┼──────────┼───────────┼───────┤
+Manage Dashboard Users        │   ❌   │    ❌    │     ❌    │   ✅  │
+System Configuration          │   ❌   │    ❌    │     ❌    │   ✅  │
+View Audit Logs               │   ❌   │    ❌    │     ❌    │   ✅  │
+Delete Users                  │   ❌   │    ❌    │     ❌    │   ✅  │
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          SECURITY FEATURES                                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+✅  Password Hashing             → werkzeug.security (pbkdf2:sha256)
+✅  JWT Tokens                   → PyJWT with HS256 algorithm
+✅  Token Expiration             → Access: 24h, Refresh: 30d
+✅  User Type Separation         → Mobile users can't access dashboard
+✅  Role-Based Authorization     → 4 levels: user, operator, moderator, admin
+✅  Account Status               → Can deactivate users (is_active)
+✅  Email Verification           → Support for is_verified flag
+✅  Last Login Tracking          → Audit trail for user activity
+✅  Secure Secret Key            → Environment variable, not hardcoded
+✅  SQL Injection Protection     → Parameterized queries
+✅  Anonymous Reporting          → Optional user_id in incidents
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          QUICK START GUIDE                                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+1. INSTALL DEPENDENCIES
+   $ pip install -r requirements.txt
+
+2. SETUP ENVIRONMENT
+   $ copy env_template.txt .env          # Windows
+   $ cp env_template.txt .env            # Linux/Mac
+   
+   Edit .env:
+   - Add database credentials
+   - Generate SECRET_KEY: python -c "import secrets; print(secrets.token_urlsafe(32))"
+
+3. CREATE DATABASE
+   $ python models/setup_db.py
+   
+   This creates:
+   ✓ users table
+   ✓ Default admin (username: admin, password: Admin@123)
+   ✓ All other tables
+
+4. TEST THE SYSTEM
+   $ python test_user_auth.py
+   
+   Tests all authentication features
+
+5. START USING
+   - Import AuthService and UserService
+   - Create API endpoints
+   - Add authentication middleware
+   - Implement role-based authorization
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              DEFAULT ADMIN                                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+🔐 Username:   admin
+📧 Email:      admin@safeegypt.com
+🔒 Password:   Admin@123
+⚡ Role:       admin
+📱 Type:       dashboard
+✅ Status:     Active & Verified
+
+⚠️  IMPORTANT: Change this password immediately after first login!
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           DOCUMENTATION FILES                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+📄 USER_SYSTEM_SETUP.md           → Complete setup guide with code examples
+📄 services/USER_AUTH_README.md   → Detailed API docs, Flask examples, best practices
+📄 USER_SYSTEM_SUMMARY.md         → Quick reference card
+📄 USER_ARCHITECTURE.txt          → This architecture diagram
+📄 env_template.txt               → Environment variables template
+
+
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                              YOU'RE ALL SET! 🎉                                ║
+║                                                                                ║
+║  The user authentication system is fully implemented and ready to use.         ║
+║  See the documentation files for detailed usage instructions.                  ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+

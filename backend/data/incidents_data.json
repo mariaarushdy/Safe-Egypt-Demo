@@ -1,47 +1,398 @@
 [
   {
-    "incident_id": "4bce2e0b-3835-4fad-af50-548c7012f2d7",
-    "timestamp_received": "2025-10-10T16:31:44.659397",
+    "incident_id": "ab14d4de-b2c2-45f6-8b11-e566e7bec324",
+    "timestamp_received": "2025-10-29T13:08:28.513661",
     "location": {
-      "latitude": 31.3519324,
-      "longitude": 27.2505666
+      "latitude": 30.0444,
+      "longitude": 31.2357
     },
     "incident": {
-      "description": "No description provided",
-      "incident_type": "other",
-      "is_anonymous": false,
-      "timestamp": "2025-10-10T16:31:12.243266"
+      "description": "null",
+      "incident_type": "Violence",
+      "is_anonymous": true,
+      "timestamp": "2025-10-29T10:08:28.486658"
     },
     "files": [
       {
-        "filename": "5d8a4c67-7915-421e-b32b-250aec1b24647315310491393084744.mp4",
+        "filename": "Films & TV 2021-02-22 09-25-56_Trim.mp4",
         "file_type": "video",
-        "file_size": 765554,
-        "saved_filename": "844a729f-5aa2-4cf0-a36d-9cc3a2af6bd6.mp4",
-        "file_path": "data\\uploads\\videos\\844a729f-5aa2-4cf0-a36d-9cc3a2af6bd6.mp4"
+        "file_size": 2215286,
+        "saved_filename": "7f3e4923-bef0-49ec-b204-517e0ccceced.mp4",
+        "file_path": "data\\uploads\\videos\\7f3e4923-bef0-49ec-b204-517e0ccceced.mp4"
       }
     ]
   },
   {
-    "incident_id": "1c87c548-09cd-4958-9a81-497ba71e8529",
-    "timestamp_received": "2025-10-10T16:38:04.802631",
+    "incident_id": "5575b5fb-493f-4569-a8f8-5d8abd419931",
+    "timestamp_received": "2025-10-29T13:26:04.992888",
     "location": {
-      "latitude": 31.3520392,
-      "longitude": 27.2505358
+      "latitude": 30.0444,
+      "longitude": 31.2357
     },
     "incident": {
-      "description": "No description provided",
-      "incident_type": "other",
-      "is_anonymous": false,
-      "timestamp": "2025-10-10T16:37:42.834703"
+      "description": "null",
+      "incident_type": "Violence",
+      "is_anonymous": true,
+      "timestamp": "2025-10-29T10:26:04.957886"
     },
     "files": [
       {
-        "filename": "77d532dc-1f5a-461f-ab9e-c8b28350dd8e7217897387143008706.jpg",
+        "filename": "Films & TV 2021-02-22 09-25-56_Trim.mp4",
+        "file_type": "video",
+        "file_size": 2215286,
+        "saved_filename": "93f431e9-4e48-41a6-b2fc-7f9191b2b24f.mp4",
+        "file_path": "data\\uploads\\videos\\93f431e9-4e48-41a6-b2fc-7f9191b2b24f.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "7c647d81-b5a4-4a3f-89d3-fae65976033c",
+    "timestamp_received": "2025-10-29T16:54:51.898360",
+    "device_id": "1234567890",
+    "location": {
+      "latitude": 30.0444,
+      "longitude": 31.2357
+    },
+    "incident": {
+      "description": "null",
+      "incident_type": "general",
+      "is_anonymous": true,
+      "timestamp": "2025-10-29T13:54:51.868718"
+    },
+    "files": [
+      {
+        "filename": "Films & TV 2021-02-22 09-25-56_Trim.mp4",
+        "file_type": "video",
+        "file_size": 2215286,
+        "saved_filename": "c247461d-8bad-46d7-b80d-0df1c9b42097.mp4",
+        "file_path": "data\\uploads\\videos\\c247461d-8bad-46d7-b80d-0df1c9b42097.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "e4084a74-5ae4-4089-a9fd-17b3bc91c439",
+    "timestamp_received": "2025-10-29T16:55:39.171977",
+    "device_id": "1234567890",
+    "location": {
+      "latitude": 30.0444,
+      "longitude": 31.2357
+    },
+    "incident": {
+      "description": "null",
+      "incident_type": "general",
+      "is_anonymous": true,
+      "timestamp": "2025-10-29T13:55:39.143383"
+    },
+    "files": [
+      {
+        "filename": "Films & TV 2021-02-22 09-25-56_Trim.mp4",
+        "file_type": "video",
+        "file_size": 2215286,
+        "saved_filename": "09123830-dc1a-4a1d-9ade-53335a7c52ee.mp4",
+        "file_path": "data\\uploads\\videos\\09123830-dc1a-4a1d-9ade-53335a7c52ee.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "d16a4f5f-884d-4be3-b6c6-b977a692f5b4",
+    "timestamp_received": "2025-10-29T16:56:35.536704",
+    "device_id": "1234567890",
+    "location": {
+      "latitude": 30.0444,
+      "longitude": 31.2357
+    },
+    "incident": {
+      "description": "null",
+      "incident_type": "general",
+      "is_anonymous": true,
+      "timestamp": "2025-10-29T13:56:35.510674"
+    },
+    "files": [
+      {
+        "filename": "Films & TV 2021-02-22 09-25-56_Trim.mp4",
+        "file_type": "video",
+        "file_size": 2215286,
+        "saved_filename": "5869cd0d-7217-40dc-b91a-5087e41e0f95.mp4",
+        "file_path": "data\\uploads\\videos\\5869cd0d-7217-40dc-b91a-5087e41e0f95.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "7a735e06-2919-44d9-b360-db37f80f1911",
+    "timestamp_received": "2025-10-29T17:05:11.308721",
+    "device_id": "1234567890",
+    "location": {
+      "latitude": 30.0444,
+      "longitude": 31.2357
+    },
+    "incident": {
+      "description": "null",
+      "incident_type": "general",
+      "is_anonymous": true,
+      "timestamp": "2025-10-29T14:05:11.279074"
+    },
+    "files": [
+      {
+        "filename": "Films & TV 2021-02-22 09-25-56_Trim.mp4",
+        "file_type": "video",
+        "file_size": 2215286,
+        "saved_filename": "00d54633-f260-4319-9309-a149e7a28dcf.mp4",
+        "file_path": "data\\uploads\\videos\\00d54633-f260-4319-9309-a149e7a28dcf.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "9ca360e8-691c-4a36-9496-6457d63f853f",
+    "timestamp_received": "2025-10-29T17:12:07.981507",
+    "device_id": "1234567890",
+    "location": {
+      "latitude": 30.0444,
+      "longitude": 31.2357
+    },
+    "incident": {
+      "description": "null",
+      "incident_type": "general",
+      "is_anonymous": true,
+      "timestamp": "2025-10-29T14:12:07.954424"
+    },
+    "files": [
+      {
+        "filename": "Films & TV 2021-02-22 09-25-56_Trim.mp4",
+        "file_type": "video",
+        "file_size": 2215286,
+        "saved_filename": "4403e33d-c56d-4178-bb15-81626ee6896d.mp4",
+        "file_path": "data\\uploads\\videos\\4403e33d-c56d-4178-bb15-81626ee6896d.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "0d66a497-8a0d-451e-9574-5f2b8aa148dd",
+    "timestamp_received": "2025-10-29T17:12:50.558306",
+    "device_id": "1234567890",
+    "location": {
+      "latitude": 30.0444,
+      "longitude": 31.2357
+    },
+    "incident": {
+      "description": "null",
+      "incident_type": "general",
+      "is_anonymous": true,
+      "timestamp": "2025-10-29T14:12:50.528588"
+    },
+    "files": [
+      {
+        "filename": "Films & TV 2021-02-22 09-25-56_Trim.mp4",
+        "file_type": "video",
+        "file_size": 2215286,
+        "saved_filename": "738b4ad7-fd7f-48c1-9bce-e6f86e02bfc9.mp4",
+        "file_path": "data\\uploads\\videos\\738b4ad7-fd7f-48c1-9bce-e6f86e02bfc9.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "686df667-1ac2-4112-a00e-16ccc72a1200",
+    "timestamp_received": "2025-10-29T17:34:07.381117",
+    "device_id": "1234567890",
+    "location": {
+      "latitude": 30.0444,
+      "longitude": 31.2357
+    },
+    "incident": {
+      "description": "null",
+      "is_anonymous": true,
+      "timestamp": "2025-10-29T14:34:07.346037+00:00"
+    },
+    "files": [
+      {
+        "filename": "Films & TV 2021-02-22 09-25-56_Trim.mp4",
+        "file_type": "video",
+        "file_size": 2215286,
+        "saved_filename": "a637b3c2-8ca2-40b9-8bc2-42b10a95e9b8.mp4",
+        "file_path": "data\\uploads\\videos\\a637b3c2-8ca2-40b9-8bc2-42b10a95e9b8.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "87e50fe7-b05d-487b-98b6-e0347240fcbb",
+    "timestamp_received": "2025-10-29T17:43:50.263120",
+    "device_id": "1234567890",
+    "location": {
+      "latitude": 30.0444,
+      "longitude": 31.2357
+    },
+    "incident": {
+      "description": "null",
+      "is_anonymous": true,
+      "timestamp": "2025-10-29T14:43:50.233119+00:00"
+    },
+    "files": [
+      {
+        "filename": "Films & TV 2021-02-22 09-25-56_Trim.mp4",
+        "file_type": "video",
+        "file_size": 2215286,
+        "saved_filename": "2e946944-b6ee-4c03-9242-3df2fa75c317.mp4",
+        "file_path": "data\\uploads\\videos\\2e946944-b6ee-4c03-9242-3df2fa75c317.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "2b73036a-02d9-4985-bf0a-3611696704c3",
+    "timestamp_received": "2025-10-29T17:50:20.004305",
+    "device_id": "RP1A.200720.011",
+    "location": {
+      "latitude": 31.3521543,
+      "longitude": 27.250606
+    },
+    "incident": {
+      "description": "No description provided",
+      "is_anonymous": true,
+      "timestamp": "2025-10-29T17:49:39.734921"
+    },
+    "files": [
+      {
+        "filename": "b7f11f3d-bfc1-4717-b08f-678575140ef46357652078443747309.jpg",
         "file_type": "photo",
-        "file_size": 1492774,
-        "saved_filename": "28de79fa-03b8-40dd-bf7c-7b1754418037.jpg",
-        "file_path": "data\\uploads\\images\\28de79fa-03b8-40dd-bf7c-7b1754418037.jpg"
+        "file_size": 1460470,
+        "saved_filename": "2723456e-8736-4b70-ba39-a6cf77ed2018.jpg",
+        "file_path": "data\\uploads\\images\\2723456e-8736-4b70-ba39-a6cf77ed2018.jpg"
+      }
+    ]
+  },
+  {
+    "incident_id": "33f4c522-a195-40a0-828a-e6fd8e8152a7",
+    "timestamp_received": "2025-10-29T17:54:00.732278",
+    "device_id": "RP1A.200720.011",
+    "location": {
+      "latitude": 31.3521576,
+      "longitude": 27.2506009
+    },
+    "incident": {
+      "description": "No description provided",
+      "is_anonymous": true,
+      "timestamp": "2025-10-29T17:53:32.634847"
+    },
+    "files": [
+      {
+        "filename": "c1cb414f-0f6f-4e6b-8a4d-a505ff6faaab7351766579433598212.jpg",
+        "file_type": "photo",
+        "file_size": 1405338,
+        "saved_filename": "d09f5724-421a-4a54-b103-7f3aa05d34a2.jpg",
+        "file_path": "data\\uploads\\images\\d09f5724-421a-4a54-b103-7f3aa05d34a2.jpg"
+      }
+    ]
+  },
+  {
+    "incident_id": "63c705ce-4c2d-485c-9f84-0c7ac9faa73a",
+    "timestamp_received": "2025-10-29T17:56:11.222820",
+    "device_id": "RP1A.200720.011",
+    "location": {
+      "latitude": 31.3520922,
+      "longitude": 27.2506126
+    },
+    "incident": {
+      "description": "No description provided",
+      "is_anonymous": true,
+      "timestamp": "2025-10-29T17:55:47.986009"
+    },
+    "files": [
+      {
+        "filename": "5dc54376-942d-44b0-98e6-3a72b6f1188a2249139107875061412.mp4",
+        "file_type": "video",
+        "file_size": 1400658,
+        "saved_filename": "418d6279-9597-49ab-96db-3afc049fdf37.mp4",
+        "file_path": "data\\uploads\\videos\\418d6279-9597-49ab-96db-3afc049fdf37.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "1cdb7723-45fc-47e6-8339-cf3b97eca3fd",
+    "timestamp_received": "2025-10-29T18:00:31.718222",
+    "device_id": "RP1A.200720.011",
+    "location": {
+      "latitude": 31.3521237,
+      "longitude": 27.2506233
+    },
+    "incident": {
+      "description": "No description provided",
+      "is_anonymous": true,
+      "timestamp": "2025-10-29T18:00:02.926472"
+    },
+    "files": [
+      {
+        "filename": "48f032c3-80e4-4841-a3c2-a97e94aa88483715312760137483082.jpg",
+        "file_type": "photo",
+        "file_size": 2919320,
+        "saved_filename": "0b35decb-1b39-4bae-a91a-e395a854cb81.jpg",
+        "file_path": "data\\uploads\\images\\0b35decb-1b39-4bae-a91a-e395a854cb81.jpg"
+      }
+    ]
+  },
+  {
+    "incident_id": "36ed1ee1-65ac-4e13-b4b3-025cf8c435b1",
+    "timestamp_received": "2025-10-29T18:15:43.069523",
+    "device_id": "RP1A.200720.011",
+    "location": {
+      "latitude": 31.3521083,
+      "longitude": 27.2505383
+    },
+    "incident": {
+      "description": "No description provided",
+      "is_anonymous": true,
+      "timestamp": "2025-10-29T18:15:15.384791"
+    },
+    "files": [
+      {
+        "filename": "187bc152-936b-4bbc-842b-620a6ea99e361396839888628843213.mp4",
+        "file_type": "video",
+        "file_size": 1859578,
+        "saved_filename": "3025eda9-2469-4563-b230-49c2c38a5ec2.mp4",
+        "file_path": "data\\uploads\\videos\\3025eda9-2469-4563-b230-49c2c38a5ec2.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "fcb72994-f4e9-4712-a4a4-fa1c5daa12bd",
+    "timestamp_received": "2025-10-29T18:24:35.211958",
+    "device_id": "RP1A.200720.011",
+    "location": {
+      "latitude": 31.3520988,
+      "longitude": 27.250628
+    },
+    "incident": {
+      "description": "No description provided",
+      "is_anonymous": true,
+      "timestamp": "2025-10-29T18:22:47.276667"
+    },
+    "files": [
+      {
+        "filename": "d3f761a7-07eb-4d6d-9a9f-a20963b7c8264955730248398768345.mp4",
+        "file_type": "video",
+        "file_size": 1268690,
+        "saved_filename": "f14fc263-38b2-4889-84a1-eb3b6f4ec8bc.mp4",
+        "file_path": "data\\uploads\\videos\\f14fc263-38b2-4889-84a1-eb3b6f4ec8bc.mp4"
+      }
+    ]
+  },
+  {
+    "incident_id": "1ca2bf31-04de-41c6-854a-718be5046873",
+    "timestamp_received": "2025-10-29T18:26:06.687497",
+    "device_id": "RP1A.200720.011",
+    "location": {
+      "latitude": 31.3521168,
+      "longitude": 27.2506192
+    },
+    "incident": {
+      "description": "No description provided",
+      "is_anonymous": true,
+      "timestamp": "2025-10-29T18:25:31.572167"
+    },
+    "files": [
+      {
+        "filename": "ce2b2f5f-8ddd-4c53-92be-2f3eceba8e243117342888938635373.mp4",
+        "file_type": "video",
+        "file_size": 1290842,
+        "saved_filename": "8d72fcfd-f626-49d6-85de-98d937235912.mp4",
+        "file_path": "data\\uploads\\videos\\8d72fcfd-f626-49d6-85de-98d937235912.mp4"
       }
     ]
   }

@@ -54,6 +54,7 @@ async def root():
                 "/api/mobile/incidents/formatted": "GET - Get formatted incidents for Flutter app", 
                 "/api/mobile/location/{latitude}/{longitude}": "GET - Get location name for coordinates",
                 "/api/mobile/health": "GET - Health check",
+                "/api/mobile/register-user": "POST - Register user",
                 "/api/dashboard/...": "Dashboard endpoints (to be implemented)"
             },
             "legacy_support": {
@@ -68,4 +69,4 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(app, host="127.0.0.1", port=8000, reload=True)

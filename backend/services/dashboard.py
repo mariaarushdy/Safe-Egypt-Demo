@@ -102,7 +102,7 @@ def get_analytics_service() -> Dict[str, Any]:
 def get_reports_service(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
-    incident_type: Optional[str] = None
+    accident_type: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Generate detailed reports based on filters
@@ -110,7 +110,7 @@ def get_reports_service(
     Args:
         start_date: Start date for report (ISO format)
         end_date: End date for report (ISO format)
-        incident_type: Filter by incident type
+        accident_type: Filter by incident type
         
     Returns:
         Dict containing report data
@@ -122,7 +122,7 @@ def get_reports_service(
         "filters": {
             "start_date": start_date,
             "end_date": end_date,
-            "incident_type": incident_type
+            "accident_type": accident_type
         }
     }
 

@@ -9,6 +9,7 @@ from datetime import datetime
 import json
 import httpx
 import asyncio
+from models.db_helper import get_all_incidents_from_db, create_registered_user
 
 # JSON file paths
 INCIDENTS_JSON_FILE = "data/incidents_data.json"
@@ -43,8 +44,7 @@ class LocationData(BaseModel):
         return v
 
 class IncidentData(BaseModel):
-    description: str = Field(..., description="Incident description")
-    incident_type: str = Field(..., description="Type of incident (e.g., emergency)")
+    description: str = Field(default="No description", description="Incident description")
     is_anonymous: bool = Field(..., description="Whether the report is anonymous")
     timestamp: datetime = Field(..., description="Incident timestamp")
 
@@ -226,6 +226,7 @@ async def get_place_name(latitude: float, longitude: float) -> str:
     # Cache the fallback result if caching is enabled
     if geocoding_config.get("cache_enabled", True):
         location_cache[cache_key] = fallback_name
+    #TODO : return the city to be able to filter on cities names on the app side
     return fallback_name
 
 def get_file_type(content_type: str) -> str:
@@ -309,9 +310,9 @@ async def upload_incident_service(
     latitude: float,
     longitude: float,
     description: str,
-    incident_type: str,
     is_anonymous: str,
     timestamp: str,
+    device_id: str,
     file_0: UploadFile,
     file_0_type: str,
     file_0_name: str,
@@ -327,9 +328,9 @@ async def upload_incident_service(
         print(f"\n🚀 New incident upload request received:")
         print(f"📍 Location: {latitude}, {longitude}")
         print(f"📝 Description: {description}")
-        print(f"🏷️ Type: {incident_type}")
         print(f"👤 Anonymous: {is_anonymous}")
         print(f"⏰ Timestamp: {timestamp}")
+        print(f"📱 Device ID: {device_id}")
         
         # Validate location data
         location = LocationData(latitude=latitude, longitude=longitude)
@@ -345,7 +346,6 @@ async def upload_incident_service(
         
         incident = IncidentData(
             description=description,
-            incident_type=incident_type,
             is_anonymous=is_anonymous_bool,
             timestamp=timestamp_dt
         )
@@ -416,13 +416,14 @@ async def upload_incident_service(
         json_data = {
             "incident_id": incident_id,
             "timestamp_received": datetime.now().isoformat(),
+            "device_id": device_id,
             "location": {
                 "latitude": location.latitude,
                 "longitude": location.longitude
             },
             "incident": {
                 "description": incident.description,
-                "incident_type": incident.incident_type,
+                # "incident_type": "emergency",  # Default type since not provided
                 "is_anonymous": incident.is_anonymous,
                 "timestamp": incident.timestamp.isoformat()
             },
@@ -599,3 +600,107 @@ async def get_location_name_service(latitude: float, longitude: float):
 def health_check_service():
     """Service function for health check"""
     return {"status": "healthy", "message": "Mobile API is running"}
+
+async def get_formatted_incidents_from_db_service():
+    """Service function to get formatted incidents from DATABASE for Flutter app"""
+    try:
+        incidents = get_all_incidents_from_db()
+        
+        formatted_incidents = []
+        
+        for incident in incidents:
+            # Calculate time ago from timestamp
+            time_display = "Unknown time"
+            if incident.get('timestamp'):
+                try:
+                    timestamp_dt = datetime.fromisoformat(incident['timestamp'])
+                    now = datetime.now(timestamp_dt.tzinfo) if timestamp_dt.tzinfo else datetime.now()
+                    time_diff = now - timestamp_dt
+                    
+                    if time_diff.days > 0:
+                        time_display = f"{time_diff.days} days ago"
+                    elif time_diff.seconds > 3600:
+                        hours = time_diff.seconds // 3600
+                        time_display = f"{hours} hours ago"
+                    elif time_diff.seconds > 60:
+                        minutes = time_diff.seconds // 60
+                        time_display = f"{minutes} minutes ago"
+                    else:
+                        time_display = "Just now"
+                except Exception as e:
+                    print(f"Error parsing timestamp: {e}")
+            
+            # Format the incident data
+            formatted_incident = {
+                "incident_id": incident['incident_id'],
+                "title": incident.get('title', 'Unknown Incident'),
+                "description": incident.get('description', 'No description available'),
+                "location": incident.get('address', 'Unknown location'),
+                "severity": incident.get('severity', 'Medium'),
+                "severityColor": "red" if incident.get('severity') == 'High' else "orange" if incident.get('severity') == 'Medium' else "gray",
+                # "icon": "local_fire_department",
+                "verified": incident.get('status') != 'pending',
+                "position": {
+                    "latitude": incident.get('latitude', 0),
+                    "longitude": incident.get('longitude', 0)
+                },
+                "violence_type": incident.get('violence_type', 'Unknown'),
+                "weapon": incident.get('weapon', 'Unknown'),
+                "site_description": incident.get('site_description', 'Unknown'),
+                "number_of_people": incident.get('number_of_people', 'Unknown'),
+                "description_of_people": incident.get('description_of_people', 'Unknown'),
+                "detailed_description_for_the_incident": incident.get('detailed_description_for_the_incident', 'Unknown'),
+                "accident_type": incident.get('accident_type', 'Unknown'),
+                "vehicles_machines_involved": incident.get('vehicles_machines_involved', 'Unknown'),
+                "utility_type": incident.get('utility_type', 'Unknown'),
+                "extent_of_impact": incident.get('extent_of_impact', 'Unknown'),
+                "duration": incident.get('duration', 'Unknown'),
+                "illegal_type": incident.get('illegal_type', 'Unknown'),
+                "items_involved": incident.get('items_involved', 'Unknown'),
+                "detected_events": incident.get('detected_events', 'Unknown'),
+                "timestamp": incident.get('timestamp', 'Unknown'),
+                "status": incident.get('status', 'pending'),
+                "location_id": incident.get('location_id', 'Unknown'),
+                "real_files": incident.get('real_files', 'Unknown'),
+                "category": incident.get('category', 'Unknown'),
+                "has_files": len(incident.get('media_files', [])) > 0,
+                "file_count": len(incident.get('media_files', [])),
+                "device_id": incident.get('device_id'),
+                "user_name": incident.get('user_name', 'Anonymous User'),
+                "is_anonymous": incident.get('is_anonymous', True)
+            }
+            
+            formatted_incidents.append(formatted_incident)
+        
+        return {
+            "incidents": formatted_incidents,
+            "total_incidents": len(formatted_incidents),
+            "message": "Incidents retrieved successfully"
+        }
+        
+    except Exception as e:
+        print(f"Error formatting incidents from database: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error formatting incidents: {str(e)}")
+
+async def register_user_service(device_id: str, national_id: str, full_name: str, contact_info: str):
+    """Service function to register a user account"""
+    try:
+        user_id = create_registered_user(national_id, full_name, contact_info, device_id)
+        
+        if user_id:
+            return {
+                "success": True,
+                "message": "User registered successfully",
+                "user_id": user_id,
+                "device_id": device_id
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to register user")
+            
+    except Exception as e:
+        print(f"Error registering user: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error registering user: {str(e)}")

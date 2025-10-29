@@ -1,0 +1,158 @@
+[
+  {
+    "category": "Accident",
+    "title": "إنذار صوتي غامض",
+    "description": "يُسمع صوت إنذار مستمر في الفيديو. لا يوجد أي دليل مرئي لتأكيد وجود حادث حقيقي.",
+    "severity": "low",
+    "verified": "fake",
+    "violence_type": null,
+    "weapon": null,
+    "site_description": null,
+    "number_of_people": null,
+    "description_of_people": null,
+    "detailed_description_for_the_incident": null,
+    "accident_type": "fire",
+    "vehicles_machines_involved": null,
+    "utility_type": null,
+    "extent_of_impact": null,
+    "duration": null,
+    "illegal_type": null,
+    "items_involved": null,
+    "detected_events": [],
+    "incident_id": "4bce2e0b-3835-4fad-af50-548c7012f2d7",
+    "timestamp": "2025-10-10T16:31:12.243266",
+    "status": "pending",
+    "location": {
+      "address": "55, شارع سالم يونس, مرسى مطروح, مطروح, 51511, مصر",
+      "latitude": 31.3519324,
+      "longitude": 27.2505666
+    },
+    "real_files": [
+      "data\\uploads\\videos\\844a729f-5aa2-4cf0-a36d-9cc3a2af6bd6.mp4"
+    ]
+  },
+  {
+    "category": "Clear",
+    "title": "لا يوجد حادث",
+    "description": "الصورة لا تظهر أي شيء. المشهد خالٍ من أي أحداث.",
+    "severity": "low",
+    "verified": "real",
+    "violence_type": null,
+    "weapon": null,
+    "site_description": null,
+    "number_of_people": null,
+    "description_of_people": null,
+    "detailed_description_for_the_incident": null,
+    "accident_type": null,
+    "vehicles_machines_involved": null,
+    "utility_type": null,
+    "extent_of_impact": null,
+    "duration": null,
+    "illegal_type": null,
+    "items_involved": null,
+    "detected_events": [],
+    "incident_id": "1c87c548-09cd-4958-9a81-497ba71e8529",
+    "timestamp": "2025-10-10T16:37:42.834703",
+    "status": "rejected",
+    "location": {
+      "address": "55, شارع سالم يونس, مرسى مطروح, مطروح, 51511, مصر",
+      "latitude": 31.3520392,
+      "longitude": 27.2505358
+    },
+    "real_files": [
+      "data\\uploads\\images\\28de79fa-03b8-40dd-bf7c-7b1754418037.jpg"
+    ]
+  },
+  {
+    "category": "Violence",
+    "title": "مضايقة لفظية داخل السجن",
+    "description": "يظهر رجل محتجز خلف قضبان السجن وهو يوجه كلامًا ساخرًا وعدائيًا لشخص آخر. يعبر السجين عن استيائه وعدم رضاه عن معاملته.",
+    "severity": "low",
+    "verified": "fake",
+    "violence_type": "harassment",
+    "weapon": "none",
+    "site_description": "زنزانة سجن مظلمة ذات قضبان معدنية.",
+    "number_of_people": 2,
+    "description_of_people": "رجل في منتصف العمر ذو شعر أشقر يرتدي سترة بنية فوق قميص أبيض، ويتحدث إلى شخص آخر غير واضح الملامح.",
+    "detailed_description_for_the_incident": "يقف رجل داخل زنزانة ويتحدث بسخرية إلى شخص ما في الخارج، قائلاً 'شكرًا' و'مراعٍ لمشاعري للغاية'. ثم يصرح بوضوح أنه لا يحب الشخص الآخر، مما يشير إلى مشادة كلامية قائمة على المضايقة.",
+    "accident_type": null,
+    "vehicles_machines_involved": null,
+    "utility_type": null,
+    "extent_of_impact": null,
+    "duration": null,
+    "illegal_type": null,
+    "items_involved": null,
+    "detected_events": [
+      {
+        "event_type": "person",
+        "first_second": 0.233,
+        "confidence": 0.95,
+        "description": "وجه المشتبه به واضح ومكشوف بالكامل، وهو ينظر للأمام.",
+        "suggested_frame_seconds": 3.036,
+        "weapon_type": null,
+        "person_attributes": "رجل ذو شعر أشقر ولحية خفيفة يقف خلف قضبان السجن. يرتدي سترة بنية فوق قميص أبيض. وجهه واضح ويبدو أنه يتحدث أو يبتسم.",
+        "image_path": "data/extracted_frames\\scenes\\scene_event_1_at_3.036s.jpg",
+        "detected_elements_paths": [
+          "data/extracted_frames\\detections\\event_1_at_3.036s_person_det1_conf0.95.jpg"
+        ]
+      }
+    ],
+    "incident_id": "59c1742b-7bdd-4782-b60e-c04d2a2e27af",
+    "timestamp": "2025-10-29T01:38:29.444234",
+    "status": "pending",
+    "location": {
+      "address": "ميدان التحرير, قصر الدوباره, باب اللوق, القاهرة, 11519, مصر",
+      "latitude": 30.0444,
+      "longitude": 31.2357
+    },
+    "real_files": [
+      "data\\uploads\\videos\\5bda9ddb-b49d-4314-b90c-2b411b9f1c8b.mp4"
+    ]
+  },
+  {
+    "category": "Violence",
+    "title": "مضايقة لفظية في السجن",
+    "description": "يظهر رجل محتجز خلف قضبان زنزانة وهو يتحدث بسخرية إلى شخص آخر. يعبر الرجل عن غضبه واستيائه من الموقف.",
+    "severity": "low",
+    "verified": "fake",
+    "violence_type": "harassment",
+    "weapon": "none",
+    "site_description": "داخل زنزانة سجن مظلمة ذات قضبان معدنية رأسية.",
+    "number_of_people": 2,
+    "description_of_people": "رجل في منتصف العمر بشعر أشقر يرتدي سترة بنية فوق قميص أبيض. الشخص الآخر بالكاد يظهر في الصورة.",
+    "detailed_description_for_the_incident": "يقف رجل خلف قضبان السجن ويوجه كلامًا ساخرًا وعدائيًا لشخص يقف أمامه خارج الزنزانة. يعبر السجين عن استيائه الشديد من معاملته، مما يشكل حالة من المضايقة اللفظية.",
+    "accident_type": null,
+    "vehicles_machines_involved": null,
+    "utility_type": null,
+    "extent_of_impact": null,
+    "duration": null,
+    "illegal_type": null,
+    "items_involved": null,
+    "detected_events": [
+      {
+        "event_type": "person",
+        "first_second": 0.333,
+        "confidence": 0.95,
+        "description": "وجه الشخص واضح ومرئي من الأمام.",
+        "suggested_frame_seconds": 0.333,
+        "weapon_type": null,
+        "person_attributes": "رجل ذو شعر أشقر يرتدي سترة فاتحة فوق قميص أبيض، ويظهر خلف قضبان السجن.",
+        "image_path": "data/extracted_frames\\scenes\\scene_event_1_at_0.333s.jpg",
+        "detected_elements_paths": [
+          "data/extracted_frames\\detections\\event_1_at_0.333s_person_det1_conf0.90.jpg"
+        ]
+      }
+    ],
+    "incident_id": "eac110b2-8537-496a-9af7-7d578d6ad50c",
+    "timestamp": "2025-10-29T08:26:41.623262",
+    "status": "pending",
+    "location": {
+      "address": "ميدان التحرير, قصر الدوباره, باب اللوق, القاهرة, 11519, مصر",
+      "latitude": 30.0444,
+      "longitude": 31.2357
+    },
+    "real_files": [
+      "data\\uploads\\videos\\8310014a-9ce6-4dd2-9749-33638db76ecb.mp4"
+    ]
+  }
+]

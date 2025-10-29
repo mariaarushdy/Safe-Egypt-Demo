@@ -44,7 +44,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
 lib64/
 parts/
 sdist/
@@ -93,7 +92,7 @@ ENV/
 build/
 
 # Web related
-lib/generated_plugin_registrant.dart
+# lib/generated_plugin_registrant.dart
 
 # Symbolication related
 app.*.symbols
@@ -141,7 +140,7 @@ build/
 
 # Directory created by dartdoc
 # If you don't generate documentation locally you can remove this line.
-doc/api/
+# doc/api/
 
 # Avoid committing generated Javascript files:
 *.dart.js
