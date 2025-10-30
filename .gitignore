@@ -244,9 +244,9 @@ temp/
 *.webm
 
 # Large image files (keep only essential ones)
-*.jpg
-*.jpeg
-*.png
+# *.jpg
+# *.jpeg
+# *.png
 *.gif
 *.bmp
 *.tiff

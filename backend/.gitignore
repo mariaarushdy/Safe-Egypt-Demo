@@ -46,7 +46,12 @@ Thumbs.db
 
 # Jupyter Notebook
 .ipynb_checkpoints
-data/extracted_frames/*
-!data/extracted_frames/.gitkeep
-data/uploads/*
-!data/uploads/.gitkeep
+# data/extracted_frames/*
+# !data/extracted_frames/.gitkeep
+# data/uploads/*
+# !data/uploads/.gitkeep
+
+*.mp4
+*.jpg
+*.jpeg
+*.png
