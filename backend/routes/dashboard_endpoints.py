@@ -1,8 +1,9 @@
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, HTTPException, Response, Request
 from fastapi.responses import FileResponse
 from services.dashboard import get_incidents_summary_service, get_incident_by_id_service, update_incident_status_service
 from pydantic import BaseModel, validator
 import os
+import hashlib
 
 # Create router for dashboard endpoints
 dashboard_router = APIRouter()
@@ -22,6 +23,14 @@ class StatusUpdateRequest(BaseModel):
         if v.lower() not in ['accepted', 'rejected']:
             raise ValueError('Status must be either "accepted" or "rejected"')
         return v.lower()
+
+def get_file_etag(file_path: str) -> str:
+    """Generate ETag for caching"""
+    try:
+        file_stat = os.stat(file_path)
+        return hashlib.md5(f"{file_path}{file_stat.st_mtime}".encode()).hexdigest()
+    except:
+        return hashlib.md5(file_path.encode()).hexdigest()
 
 @dashboard_router.get("/")
 async def dashboard_root():
@@ -72,7 +81,7 @@ async def get_incident_by_id(incident_id: str):
 
 
 @dashboard_router.post("/incident/{incident_id}/video")
-async def serve_incident_video(incident_id: str, request: VideoRequest):
+async def serve_incident_video(incident_id: str, request: VideoRequest, req: Request):
     """
     Serve video file associated with an incident
     
@@ -119,16 +128,29 @@ async def serve_incident_video(incident_id: str, request: VideoRequest):
     if not actual_file_path or not os.path.exists(actual_file_path):
         raise HTTPException(status_code=404, detail="Video file not found on server")
     
+    # Generate ETag for cache validation
+    etag = get_file_etag(actual_file_path)
+    
+    # Check if client has cached version
+    if_none_match = req.headers.get("if-none-match")
+    if if_none_match == etag:
+        return Response(status_code=304)  # Not Modified
+    
     # Return file response with appropriate headers
     return FileResponse(
         path=actual_file_path,
         media_type="video/mp4",
-        filename=os.path.basename(actual_file_path)
+        filename=os.path.basename(actual_file_path),
+        headers={
+            "Cache-Control": "public, max-age=604800, immutable",  # 7 days
+            "ETag": etag,
+            "Accept-Ranges": "bytes",
+        }
     )
 
 
 @dashboard_router.post("/incident/{incident_id}/image")
-async def serve_incident_image(incident_id: str, request: ImageRequest):
+async def serve_incident_image(incident_id: str, request: ImageRequest, req: Request):
     """
     Serve image file associated with an incident
     
@@ -168,6 +190,14 @@ async def serve_incident_image(incident_id: str, request: ImageRequest):
     if not os.path.exists(image_path):
         raise HTTPException(status_code=404, detail="Image file not found on server")
     
+    # Generate ETag for cache validation
+    etag = get_file_etag(image_path)
+    
+    # Check if client has cached version
+    if_none_match = req.headers.get("if-none-match")
+    if if_none_match == etag:
+        return Response(status_code=304)  # Not Modified
+    
     # Determine media type based on file extension
     if image_path.lower().endswith('.jpg') or image_path.lower().endswith('.jpeg'):
         media_type = "image/jpeg"
@@ -179,7 +209,11 @@ async def serve_incident_image(incident_id: str, request: ImageRequest):
     return FileResponse(
         path=image_path,
         media_type=media_type,
-        filename=os.path.basename(image_path)
+        filename=os.path.basename(image_path),
+        headers={
+            "Cache-Control": "public, max-age=604800, immutable",  # 7 days
+            "ETag": etag,
+        }
     )
 
 

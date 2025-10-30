@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -7,9 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import Sidebar from "@/components/Sidebar";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { mediaCacheService } from "@/services/mediaCacheService";
+import { persistentMediaCache } from "@/services/persistentMediaCache";
 import { 
   Edit, 
   Trash2, 
@@ -18,7 +21,9 @@ import {
   Users,
   Settings as SettingsIcon,
   Bell,
-  Shield
+  Shield,
+  Database,
+  HardDrive
 } from "lucide-react";
 
 interface User {
@@ -82,7 +87,49 @@ const Settings = () => {
     "supervisor@emergency.gov"
   ]);
   const [newEmail, setNewEmail] = useState("");
+  const [cacheStats, setCacheStats] = useState<any>(null);
+  const [persistentStats, setPersistentStats] = useState<any>(null);
+  const [loadingCache, setLoadingCache] = useState(false);
   const { t } = useLanguage();
+
+  const loadCacheStats = async () => {
+    setLoadingCache(true);
+    try {
+      const memStats = mediaCacheService.getStats();
+      const dbStats = await persistentMediaCache.getStats();
+      setCacheStats(memStats);
+      setPersistentStats(dbStats);
+    } catch (error) {
+      console.error('Failed to load cache stats:', error);
+    } finally {
+      setLoadingCache(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCacheStats();
+  }, []);
+
+  const handleClearMemoryCache = () => {
+    mediaCacheService.clearAll();
+    loadCacheStats();
+  };
+
+  const handleClearPersistentCache = async () => {
+    await persistentMediaCache.clearAll();
+    loadCacheStats();
+  };
+
+  const handleClearAllCache = async () => {
+    mediaCacheService.clearAll();
+    await persistentMediaCache.clearAll();
+    loadCacheStats();
+  };
+
+  const handleClearOldCache = async () => {
+    await persistentMediaCache.clearOld();
+    loadCacheStats();
+  };
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
@@ -124,7 +171,7 @@ const Settings = () => {
 
             {/* Tabs */}
             <Tabs defaultValue="users" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="users" className="flex items-center gap-2">
                   <Users className="h-4 w-4" />
                   {t('settings.userManagement')}
@@ -140,6 +187,10 @@ const Settings = () => {
                 <TabsTrigger value="system" className="flex items-center gap-2">
                   <Shield className="h-4 w-4" />
                   {t('settings.systemConfig')}
+                </TabsTrigger>
+                <TabsTrigger value="cache" className="flex items-center gap-2">
+                  <Database className="h-4 w-4" />
+                  Cache
                 </TabsTrigger>
               </TabsList>
 
@@ -451,6 +502,104 @@ const Settings = () => {
                     </CardContent>
                   </Card>
                 </div>
+              </TabsContent>
+
+              {/* Cache Management Tab */}
+              <TabsContent value="cache" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <HardDrive className="h-5 w-5" />
+                      Media Cache Management
+                    </CardTitle>
+                    <CardDescription>
+                      Manage cached videos and images for faster loading
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Memory Cache Stats */}
+                    <div className="space-y-3">
+                      <h3 className="font-semibold">Session Cache (Memory)</h3>
+                      {cacheStats && (
+                        <div className="grid grid-cols-3 gap-4">
+                          <Card className="p-4">
+                            <div className="text-2xl font-bold">{cacheStats.videos.count}</div>
+                            <div className="text-sm text-muted-foreground">Videos</div>
+                            <div className="text-xs text-muted-foreground">{cacheStats.videos.sizeMB} MB</div>
+                          </Card>
+                          <Card className="p-4">
+                            <div className="text-2xl font-bold">{cacheStats.images.count}</div>
+                            <div className="text-sm text-muted-foreground">Images</div>
+                            <div className="text-xs text-muted-foreground">{cacheStats.images.sizeMB} MB</div>
+                          </Card>
+                          <Card className="p-4">
+                            <div className="text-2xl font-bold">{cacheStats.total.sizeMB} MB</div>
+                            <div className="text-sm text-muted-foreground">Total Size</div>
+                            <div className="text-xs text-muted-foreground">
+                              {cacheStats.total.utilizationPercent.toFixed(1)}% used
+                            </div>
+                          </Card>
+                        </div>
+                      )}
+                      <Button variant="outline" onClick={handleClearMemoryCache} disabled={loadingCache}>
+                        Clear Session Cache
+                      </Button>
+                    </div>
+
+                    <Separator />
+
+                    {/* Persistent Cache Stats */}
+                    <div className="space-y-3">
+                      <h3 className="font-semibold">Persistent Cache (IndexedDB)</h3>
+                      {persistentStats && (
+                        <div className="grid grid-cols-3 gap-4">
+                          <Card className="p-4">
+                            <div className="text-2xl font-bold">{persistentStats.videos.count}</div>
+                            <div className="text-sm text-muted-foreground">Videos</div>
+                            <div className="text-xs text-muted-foreground">{persistentStats.videos.totalSizeMB} MB</div>
+                          </Card>
+                          <Card className="p-4">
+                            <div className="text-2xl font-bold">{persistentStats.images.count}</div>
+                            <div className="text-sm text-muted-foreground">Images</div>
+                            <div className="text-xs text-muted-foreground">{persistentStats.images.totalSizeMB} MB</div>
+                          </Card>
+                          <Card className="p-4">
+                            <div className="text-2xl font-bold">{persistentStats.total.totalSizeMB} MB</div>
+                            <div className="text-sm text-muted-foreground">Total Size</div>
+                            <div className="text-xs text-muted-foreground">
+                              {persistentStats.total.count} files
+                            </div>
+                          </Card>
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <Button variant="outline" onClick={handleClearOldCache} disabled={loadingCache}>
+                          Clear Old Cache (7+ days)
+                        </Button>
+                        <Button variant="outline" onClick={handleClearPersistentCache} disabled={loadingCache}>
+                          Clear Persistent Cache
+                        </Button>
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    <div className="space-y-3">
+                      <Button variant="destructive" onClick={handleClearAllCache} disabled={loadingCache}>
+                        Clear All Caches
+                      </Button>
+                      <p className="text-xs text-muted-foreground">
+                        This will remove all cached media. New media will be downloaded when needed.
+                      </p>
+                    </div>
+
+                    <Separator />
+
+                    <Button variant="ghost" onClick={loadCacheStats} disabled={loadingCache}>
+                      {loadingCache ? 'Refreshing...' : 'Refresh Stats'}
+                    </Button>
+                  </CardContent>
+                </Card>
               </TabsContent>
             </Tabs>
           </div>

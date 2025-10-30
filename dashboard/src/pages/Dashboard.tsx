@@ -23,12 +23,14 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { 
   fetchIncidents, 
+  fetchIncidentDetail,
   calculateDashboardStats, 
   getSeverityMapColor,
   mapCategory,
   type Incident,
   type DashboardStats 
 } from "@/lib/api";
+import { mediaCacheService } from "@/services/mediaCacheService";
 
 // Helper function to get time ago from timestamp
 const getTimeAgo = (timestamp: string, t: (key: string) => string): string => {
@@ -94,6 +96,41 @@ const Dashboard = () => {
 
     loadIncidents();
   }, []);
+
+  // Preload media for high-priority incidents
+  useEffect(() => {
+    const preloadMedia = async () => {
+      // Get high-priority incidents
+      const highPriorityIncidents = incidents
+        .filter(i => i.severity === 'High' && i.status === 'pending')
+        .slice(0, 3); // Top 3
+      
+      if (highPriorityIncidents.length === 0) return;
+      
+      console.log(`🔄 Preloading media for ${highPriorityIncidents.length} high-priority incidents...`);
+      
+      for (const incident of highPriorityIncidents) {
+        try {
+          const detail = await fetchIncidentDetail(incident.incident_id);
+          // This will cache both video and images
+          await mediaCacheService.preloadIncidentMedia(
+            incident.incident_id, 
+            detail.incident_info
+          );
+        } catch (e) {
+          console.warn('Preload failed for incident:', incident.incident_id, e);
+        }
+      }
+      
+      console.log('✅ Media preloading complete');
+    };
+    
+    if (incidents.length > 0) {
+      // Preload after 3 seconds to not interfere with initial render
+      const timeoutId = setTimeout(preloadMedia, 3000);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [incidents]);
 
   const handleIncidentClick = (incidentId: string) => {
     navigate(`/incident/${incidentId}`);

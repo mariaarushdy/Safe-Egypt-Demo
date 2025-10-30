@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,12 +22,11 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import Sidebar from "@/components/Sidebar";
 import { 
   fetchIncidentDetail, 
-  fetchIncidentVideo,
-  fetchIncidentImage,
   updateIncidentStatus,
   type IncidentInfo,
   type DetectedEvent 
 } from "@/lib/api";
+import { mediaCacheService } from "@/services/mediaCacheService";
 
 const IncidentDetail = () => {
   const { id } = useParams();
@@ -42,10 +41,6 @@ const IncidentDetail = () => {
   const [videoError, setVideoError] = useState<string | null>(null);
   const [videoLoading, setVideoLoading] = useState(false);
   const [sceneImages, setSceneImages] = useState<{ [key: string]: string }>({});
-  
-  // Use refs to track blob URLs for cleanup
-  const videoUrlRef = useRef<string | null>(null);
-  const sceneImageUrlsRef = useRef<string[]>([]);
 
   useEffect(() => {
     const loadIncidentDetail = async () => {
@@ -57,50 +52,14 @@ const IncidentDetail = () => {
         const response = await fetchIncidentDetail(id);
         setIncidentData(response.incident_info);
         
-        // Load video if available
+        // Load video if available (using cache service)
         console.log('Real files:', response.incident_info.real_files);
         if (response.incident_info.real_files && response.incident_info.real_files.length > 0) {
-          console.log('Attempting to load video:', response.incident_info.real_files[0]);
+          console.log('Loading video with cache:', response.incident_info.real_files[0]);
           setVideoLoading(true);
           setVideoError(null);
           try {
-            const videoBlob = await fetchIncidentVideo(id, response.incident_info.real_files[0]);
-            console.log('Video blob loaded:', videoBlob.size, 'bytes', 'type:', videoBlob.type);
-            
-            // Check if the blob is actually a video
-            if (videoBlob.size === 0) {
-              throw new Error('Video file is empty');
-            }
-            
-            // Check if blob type is video or if it's an error response (HTML)
-            if (videoBlob.type.startsWith('text/html') || videoBlob.type.startsWith('application/json')) {
-              // The server returned an error page instead of video
-              const text = await videoBlob.text();
-              console.error('Server returned error instead of video:', text);
-              throw new Error('Server returned error response instead of video');
-            }
-            
-            // Validate that it's actually a video blob
-            if (!videoBlob.type.startsWith('video/') && videoBlob.type !== 'application/octet-stream') {
-              console.warn('Unexpected blob type:', videoBlob.type, 'but proceeding anyway');
-            }
-            
-            // Clean up previous video URL if it exists
-            if (videoUrlRef.current) {
-              URL.revokeObjectURL(videoUrlRef.current);
-            }
-            
-            const url = URL.createObjectURL(videoBlob);
-            console.log('Video URL created:', url);
-            
-            // Test if the blob URL is accessible
-            const testResponse = await fetch(url);
-            if (!testResponse.ok) {
-              throw new Error('Blob URL is not accessible');
-            }
-            
-            // Store in ref for cleanup and state for rendering
-            videoUrlRef.current = url;
+            const url = await mediaCacheService.getVideo(id, response.incident_info.real_files[0]);
             setVideoUrl(url);
           } catch (videoError) {
             const errorMsg = videoError instanceof Error ? videoError.message : 'Unknown video loading error';
@@ -114,29 +73,27 @@ const IncidentDetail = () => {
           setVideoError('No video files available for this incident');
         }
 
-        // Clean up previous scene image URLs
-        sceneImageUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
-        sceneImageUrlsRef.current = [];
+        // Load scene images using batch cache loading
+        const imagePaths = response.incident_info.detected_events
+          .map((event: DetectedEvent) => event.image_path)
+          .filter(Boolean);
         
-        // Load scene images from each event
-        const imageUrls: { [key: string]: string } = {};
-        const newImageUrls: string[] = [];
-        for (const event of response.incident_info.detected_events) {
-          if (event.image_path) {
-            try {
-              const imageBlob = await fetchIncidentImage(id, event.image_path);
-              const url = URL.createObjectURL(imageBlob);
-              imageUrls[event.image_path] = url;
-              newImageUrls.push(url);
-            } catch (imageError) {
-              console.warn(`Could not load scene image ${event.image_path}:`, imageError);
-            }
+        if (imagePaths.length > 0) {
+          console.log(`Loading ${imagePaths.length} scene images with cache...`);
+          try {
+            const imageUrlsMap = await mediaCacheService.getImagesBatch(id, imagePaths);
+            
+            // Convert Map to object for state
+            const imageUrls: { [key: string]: string } = {};
+            imageUrlsMap.forEach((url, path) => {
+              imageUrls[path] = url;
+            });
+            
+            setSceneImages(imageUrls);
+          } catch (imageError) {
+            console.warn('Failed to load some scene images:', imageError);
           }
         }
-        
-        // Store URLs in ref for cleanup
-        sceneImageUrlsRef.current = newImageUrls;
-        setSceneImages(imageUrls);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load incident details');
         console.error('Error loading incident detail:', err);
@@ -148,18 +105,7 @@ const IncidentDetail = () => {
     loadIncidentDetail();
   }, [id]);
 
-  // Cleanup all blob URLs on unmount
-  useEffect(() => {
-    return () => {
-      // Clean up video URL
-      if (videoUrlRef.current) {
-        URL.revokeObjectURL(videoUrlRef.current);
-      }
-      
-      // Clean up scene image URLs
-      sceneImageUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
-    };
-  }, []); // Empty dependency array - only run on unmount
+  // Cache service handles cleanup automatically, no manual cleanup needed
 
   const handleAction = async (action: 'accept' | 'reject') => {
     if (!id) return;
