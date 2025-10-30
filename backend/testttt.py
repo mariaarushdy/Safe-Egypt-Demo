@@ -16,11 +16,12 @@ data = {
 
 # Attach file(s)
 files = {
-    "file_0": ("D:/projects/digitopia/Safe-Egypt-Demo/backend/data/uploads/videos/Films & TV 2021-02-22 09-25-56_Trim.mp4", open("D:/projects/digitopia/Safe-Egypt-Demo/backend/data/uploads/videos/Films & TV 2021-02-22 09-25-56_Trim.mp4", "rb"), "video/mp4"),
+    "file_0": ("D:/videos/Captures/even more of supernatural being a 15 year long fever dream - YouTube - Google Chrome 2021-10-16 17-52-12_Trim.mp4", open("D:/videos/Captures/even more of supernatural being a 15 year long fever dream - YouTube - Google Chrome 2021-10-16 17-52-12_Trim.mp4", "rb"), "video/mp4"),
 }
+
 # Extra file metadata
 data["file_0_type"] = "video"
-data["file_0_name"] = "Films & TV 2021-02-22 09-25-56_Trim.mp4"
+data["file_0_name"] = "D:/videos/Captures/even more of supernatural being a 15 year long fever dream - YouTube - Google Chrome 2021-10-16 17-52-12_Trim.mp4"
 
 # Optional second file example:
 # files["file_1"] = ("video.mp4", open("video.mp4", "rb"), "video/mp4")

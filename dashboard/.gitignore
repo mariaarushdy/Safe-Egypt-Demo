@@ -4,8 +4,8 @@ node_modules/
 .pnp.js
 
 # Production builds
-dist/
-build/
+# dist/
+# build/
 
 # Environment variables
 .env
@@ -57,7 +57,7 @@ jspm_packages/
 
 # Gatsby files
 .cache/
-public
+# public
 
 # Storybook build outputs
 .out
@@ -94,4 +94,4 @@ yarn-error.log*
 lerna-debug.log*
 
 # Bun lockfile (can be regenerated)
-bun.lockb
+# bun.lockb

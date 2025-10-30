@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routes.mobile_endpoints import mobile_router
 from routes.dashboard_endpoints import dashboard_router
-from services.mobile import load_config
+# from services.mobile import load_config
 import os
 from pathlib import Path
 import logging
@@ -31,7 +31,7 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 (UPLOAD_DIR / "videos").mkdir(exist_ok=True)
 
 # Load configuration on startup
-load_config()
+# load_config()
 
 # Include routers
 app.include_router(mobile_router, prefix="/api/mobile", tags=["Mobile"])
@@ -69,4 +69,14 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
+    print("Starting server...")
+    
+    if not os.path.exists("data"):
+        os.makedirs("data")
+    if not os.path.exists("data/uploads"):
+        os.makedirs("data/uploads")
+    if not os.path.exists("data/uploads/images"):
+        os.makedirs("data/uploads/images")
+    if not os.path.exists("data/uploads/videos"):
+        os.makedirs("data/uploads/videos")
     uvicorn.run(app, host="127.0.0.1", port=8000, reload=True)

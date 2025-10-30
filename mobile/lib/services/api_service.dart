@@ -11,6 +11,7 @@ import 'package:safe_egypt_v2/services/media_service.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 
+
 Future<String> getDeviceId() async {
   final deviceInfo = DeviceInfoPlugin();
   final androidInfo = await deviceInfo.androidInfo;
@@ -31,7 +32,7 @@ class ApiService {
     // For physical Android device, use your computer's IP address
     // Make sure your phone and computer are on the same WiFi network
     // return 'http://192.168.1.242:8000';
-    return 'https://unnacreous-jameson-diacidic.ngrok-free.dev';
+    return "https://unnacreous-jameson-diacidic.ngrok-free.dev";
     // Alternative: Use this if you're on a different network
     // Find your IP with: ipconfig (Windows) or ifconfig (Mac/Linux)
     // return 'http://YOUR_COMPUTER_IP:8000';

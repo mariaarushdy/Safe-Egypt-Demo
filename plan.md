@@ -1,4 +1,4 @@
-I'll help you organize your thoughts and create a logical order for tackling these tasks. Let me first understand your current project structure better.
+<!-- I'll help you organize your thoughts and create a logical order for tackling these tasks. Let me first understand your current project structure better.
 
 [5 tools called]
 
@@ -13,7 +13,7 @@ Here's the logical order you should follow:
 ## **PHASE 1: Foundation Layer (Week 1-2)** 
 ### ⚡ **Priority: CRITICAL - Do This First**
 
-### **1. Attach Database to Store Data** 
+<!-- ### **1. Attach Database to Store Data** 
 **Why First:** Everything else depends on proper data storage. Currently using JSON files which is problematic for production.
 
 **Current State:**
@@ -39,7 +39,7 @@ Priority Order:
 
 **Estimated Time:** 3-5 days
 **Blockers:** None - can start immediately
-**Dependencies:** ALL other tasks depend on this
+**Dependencies:** ALL other tasks depend on this -->
 
 ---
 
@@ -119,7 +119,7 @@ Priority Order:
 **Dependencies:** Needs database (Phase 1)
 
 ---
-
+<!-- 
 ### **4. Fix Caching for Website**
 
 **Current State:**
@@ -144,7 +144,7 @@ Priority Order:
 4.3 CDN Setup (optional):
     - Cache media files
     - Serve static assets from CDN
-```
+``` -->
 
 **Estimated Time:** 2-3 days
 **Dependencies:** Needs database (Phase 1), can be done parallel to AI fixes
@@ -268,4 +268,31 @@ Would you like me to dive deeper into any specific phase? For example, I can sho
 - Caching strategy details
 - Language refactoring approach
 
-Let me know which phase you'd like to start with, and I'll provide detailed implementation guidance! 🚀
+Let me know which phase you'd like to start with, and I'll provide detailed implementation guidance! 🚀 -->
+
+
+============================
+
+
+authntication:
+    mobile: make a create user page that contains the following:
+        CREATE TABLE app_users (
+        id SERIAL PRIMARY KEY,
+        device_id VARCHAR(255) UNIQUE NOT NULL,
+        national_id VARCHAR(50) UNIQUE,
+        full_name VARCHAR(255),
+        contact_info VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    add the reporter data to the incident details on the website.
+    web: just a basic login 
+        create username, password thats it
+
+ai:
+    gemini: -> frames 1.2 sla7 -> 
+            -> 3 to 5 -> 
+            ->
+            ->
+
+
+

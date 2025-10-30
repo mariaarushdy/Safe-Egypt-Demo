@@ -11,7 +11,7 @@ import httpx
 import asyncio
 from models.db_helper import get_all_incidents_from_db, create_registered_user
 
-# JSON file paths
+# # JSON file paths
 INCIDENTS_JSON_FILE = "data/incidents_data.json"
 CONFIG_JSON_FILE = "data/incident_config.json"
 
@@ -22,7 +22,20 @@ location_cache = {}
 config_data = {}
 
 # Upload directory (inside data folder)
+
 UPLOAD_DIR = Path("data/uploads")
+# Ensure that required directories exist
+required_dirs = [
+    str(UPLOAD_DIR),
+]
+
+for d in required_dirs:
+    if d and not os.path.exists(d):
+        os.makedirs(d, exist_ok=True)
+
+
+
+
 
 # Pydantic models
 class LocationData(BaseModel):
@@ -80,43 +93,43 @@ ALLOWED_TYPES = ALLOWED_IMAGE_TYPES | ALLOWED_VIDEO_TYPES
 # Maximum file size (50MB)
 MAX_FILE_SIZE = 50 * 1024 * 1024
 
-def load_config():
-    """Load configuration from JSON file"""
-    global config_data
-    try:
-        if os.path.exists(CONFIG_JSON_FILE):
-            with open(CONFIG_JSON_FILE, 'r', encoding='utf-8') as f:
-                config_data = json.load(f)
-                print(f"✅ Configuration loaded from {CONFIG_JSON_FILE}")
-        else:
-            print(f"⚠️ Configuration file {CONFIG_JSON_FILE} not found, using defaults")
-            config_data = {
-                "incident_types": {
-                    "emergency": {
-                        "title": "Emergency Incident",
-                        "description": "Emergency situation reported",
-                        "severity": "High",
-                        "severity_color": "red",
-                        "icon": "warning"
-                    }
-                },
-                "default_incident_type": "emergency",
-                "location_regions": [],
-                "geocoding": {
-                    "enabled": True,
-                    "fallback_to_regions": True,
-                    "cache_enabled": True,
-                    "timeout_seconds": 5,
-                    "user_agent": "Digitopia-Backend/1.0.0"
-                },
-                "api_settings": {
-                    "max_incidents_per_request": 100,
-                    "default_icon": "local_fire_department"
-                }
-            }
-    except Exception as e:
-        print(f"❌ Error loading configuration: {e}")
-        config_data = {}
+# def load_config():
+#     """Load configuration from JSON file"""
+#     global config_data
+#     try:
+#         if os.path.exists(CONFIG_JSON_FILE):
+#             with open(CONFIG_JSON_FILE, 'r', encoding='utf-8') as f:
+#                 config_data = json.load(f)
+#                 print(f"✅ Configuration loaded from {CONFIG_JSON_FILE}")
+#         else:
+#             print(f"⚠️ Configuration file {CONFIG_JSON_FILE} not found, using defaults")
+#             config_data = {
+#                 "incident_types": {
+#                     "emergency": {
+#                         "title": "Emergency Incident",
+#                         "description": "Emergency situation reported",
+#                         "severity": "High",
+#                         "severity_color": "red",
+#                         "icon": "warning"
+#                     }
+#                 },
+#                 "default_incident_type": "emergency",
+#                 "location_regions": [],
+#                 "geocoding": {
+#                     "enabled": True,
+#                     "fallback_to_regions": True,
+#                     "cache_enabled": True,
+#                     "timeout_seconds": 5,
+#                     "user_agent": "Digitopia-Backend/1.0.0"
+#                 },
+#                 "api_settings": {
+#                     "max_incidents_per_request": 100,
+#                     "default_icon": "local_fire_department"
+#                 }
+#             }
+#     except Exception as e:
+#         print(f"❌ Error loading configuration: {e}")
+#         config_data = {}
 
 def get_location_from_regions(latitude: float, longitude: float) -> str:
     """Get location name from predefined regions in config"""

@@ -2,7 +2,22 @@
 // Change this to your backend URL:
 // - For local development: 'http://localhost:8000'
 // - For ngrok: 'https://your-ngrok-url.ngrok-free.dev'
+// const API_BASE_URL = 'http://localhost:8000';
+
+// import { readFileSync } from 'fs';
+
+// // Read and parse the JSON config file
+// const ngrokConfig = JSON.parse(readFileSync('ngrok_config.json', 'utf8'));
+
+// // Extract the ngrok_ip field
+// const ngrok = ngrokConfig['ngrok_ip'];
+
+// // Set your base URL
+// const API_BASE_URL = ngrok;
+
+// export default API_BASE_URL;
 const API_BASE_URL = 'http://localhost:8000';
+// const API_BASE_URL = 'https://unnacreous-jameson-diacidic.ngrok-free.dev';
 
 export interface IncidentLocation {
   address: string;
