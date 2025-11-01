@@ -8,6 +8,7 @@ from services.dashboard import (
     manage_users_service
 )
 from pydantic import BaseModel, validator
+from typing import Optional
 import os
 import hashlib
 
