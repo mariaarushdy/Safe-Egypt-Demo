@@ -14,11 +14,11 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { mediaCacheService } from "@/services/mediaCacheService";
 import { persistentMediaCache } from "@/services/persistentMediaCache";
 import { UsersResponse, fetchUsers } from "@/lib/api";
-import { 
-  Edit, 
-  Trash2, 
-  Plus, 
-  TestTube, 
+import {
+  Edit,
+  Trash2,
+  Plus,
+  TestTube,
   Users,
   Settings as SettingsIcon,
   Bell,
@@ -26,6 +26,16 @@ import {
   Database,
   HardDrive
 } from "lucide-react";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from "@/components/ui/dialog";
 
 interface DashboardUser {
   id: number;
@@ -50,6 +60,11 @@ const Settings = () => {
   const [cacheStats, setCacheStats] = useState<any>(null);
   const [persistentStats, setPersistentStats] = useState<any>(null);
   const [loadingCache, setLoadingCache] = useState(false);
+  const [showAddUser, setShowAddUser] = useState(false);
+  const [addUserLoading, setAddUserLoading] = useState(false);
+  const [addUserError, setAddUserError] = useState<string | null>(null);
+  const [addUserSuccess, setAddUserSuccess] = useState<string | null>(null);
+  const [newUser, setNewUser] = useState({ username: "", full_name: "", password: "" });
   const { t } = useLanguage();
 
   const loadUsersData = async () => {
@@ -129,6 +144,32 @@ const Settings = () => {
     setEmailRecipients(emailRecipients.filter(e => e !== email));
   };
 
+  const handleAddUser = async () => {
+    setAddUserLoading(true);
+    setAddUserError(null);
+    setAddUserSuccess(null);
+    try {
+      const res = await fetch("http://localhost:8000/api/dashboard/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newUser),
+      });
+      const data = await res.json();
+      if (!res.ok || data.status !== "success") {
+        setAddUserError(data.message || "Failed to add user");
+      } else {
+        setAddUserSuccess("User created successfully");
+        setNewUser({ username: "", full_name: "", password: "" });
+        loadUsersData();
+        setShowAddUser(false);
+      }
+    } catch (e: any) {
+      setAddUserError(e.message || "Failed to add user");
+    } finally {
+      setAddUserLoading(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen w-full bg-background">
       <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
@@ -177,10 +218,44 @@ const Settings = () => {
                         Manage dashboard user accounts and permissions
                       </CardDescription>
                     </div>
-                    <Button className="flex items-center gap-2">
-                      <Plus className="h-4 w-4" />
-                      Add New User
-                    </Button>
+                    <Dialog open={showAddUser} onOpenChange={setShowAddUser}>
+                      <DialogTrigger asChild>
+                        <Button className="flex items-center gap-2">
+                          <Plus className="h-4 w-4" />
+                          Add New User
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Add New User</DialogTitle>
+                          <DialogDescription>Enter credentials for the new dashboard user.</DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <Label>Username</Label>
+                            <Input value={newUser.username} onChange={e => setNewUser(u => ({ ...u, username: e.target.value }))} />
+                          </div>
+                          <div>
+                            <Label>Full Name</Label>
+                            <Input value={newUser.full_name} onChange={e => setNewUser(u => ({ ...u, full_name: e.target.value }))} />
+                          </div>
+                          <div>
+                            <Label>Password</Label>
+                            <Input type="password" value={newUser.password} onChange={e => setNewUser(u => ({ ...u, password: e.target.value }))} />
+                          </div>
+                          {addUserError && <div className="text-red-500 text-sm">{addUserError}</div>}
+                          {addUserSuccess && <div className="text-green-600 text-sm">{addUserSuccess}</div>}
+                        </div>
+                        <DialogFooter>
+                          <Button onClick={handleAddUser} disabled={addUserLoading}>
+                            {addUserLoading ? "Adding..." : "Add User"}
+                          </Button>
+                          <DialogClose asChild>
+                            <Button variant="outline">Cancel</Button>
+                          </DialogClose>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </CardHeader>
                   <CardContent>
                     <div className="mb-6">

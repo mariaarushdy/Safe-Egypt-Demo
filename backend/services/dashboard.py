@@ -373,3 +373,40 @@ def update_incident_status_service(incident_id: str, status: str) -> Dict[str, A
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating incident status: {str(e)}")
+
+# --- User creation service ---
+def create_dashboard_user_service(username: str, full_name: str, password: str) -> dict:
+    """
+    Create a new dashboard user in the database.
+    Returns a dict with status and message.
+    """
+    from models.db_helper import get_db_connection
+    import hashlib
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        # Check if username already exists
+        cur.execute("SELECT id FROM dashboard_users WHERE username = %s;", (username,))
+        if cur.fetchone():
+            cur.close()
+            conn.close()
+            return {"status": "error", "message": "Username already exists."}
+
+        # Hash the password (simple SHA256 for demo; use bcrypt/argon2 in production)
+        password_hash = hashlib.sha256(password.encode()).hexdigest()
+        cur.execute(
+            """
+            INSERT INTO dashboard_users (username, full_name, password_hash, is_active, created_at)
+            VALUES (%s, %s, %s, TRUE, NOW())
+            RETURNING id;
+            """,
+            (username, full_name, password_hash)
+        )
+        user_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"status": "success", "message": "User created successfully.", "user_id": user_id}
+    except Exception as e:
+        logger.error(f"Error creating dashboard user: {str(e)}", exc_info=True)
+        return {"status": "error", "message": f"Failed to create user: {str(e)}"}

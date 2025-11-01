@@ -1,3 +1,4 @@
+from pydantic import BaseModel, Field
 from fastapi import APIRouter, HTTPException, Response, Request
 from fastapi.responses import FileResponse
 from services.dashboard import (
@@ -74,6 +75,20 @@ async def get_incidents_summary():
     """
     return get_incidents_summary_service()
 
+# Request model for creating a user
+class CreateUserRequest(BaseModel):
+    username: str = Field(..., min_length=3, max_length=32)
+    full_name: str = Field(..., min_length=3, max_length=100)
+    password: str = Field(..., min_length=8, max_length=128)
+# Add user creation endpoint
+@dashboard_router.post("/users")
+async def create_dashboard_user(request: CreateUserRequest):
+    """Create a new dashboard user (admin only)."""
+    from services.dashboard import create_dashboard_user_service
+    result = create_dashboard_user_service(request.username, request.full_name, request.password)
+    if result["status"] == "error":
+        raise HTTPException(status_code=400, detail=result["message"])
+    return result
 
 @dashboard_router.get("/incident/{incident_id}")
 async def get_incident_by_id(incident_id: str):
