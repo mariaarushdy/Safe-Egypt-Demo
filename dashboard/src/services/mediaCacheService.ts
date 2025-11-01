@@ -226,7 +226,7 @@ class MediaCacheService {
     if (incidentData.real_files && incidentData.real_files.length > 0) {
       promises.push(
         this.getVideo(incidentId, incidentData.real_files[0])
-          .catch(err => console.warn('Video preload failed:', err))
+          .catch((err: unknown) => console.warn('Video preload failed:', err))
       );
     }
     
@@ -238,7 +238,7 @@ class MediaCacheService {
     if (imagePaths.length > 0) {
       promises.push(
         this.getImagesBatch(incidentId, imagePaths)
-          .catch(err => console.warn('Images preload failed:', err))
+          .catch((err: unknown) => console.warn('Images preload failed:', err))
       );
     }
     
