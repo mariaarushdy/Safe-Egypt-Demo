@@ -217,10 +217,10 @@ class MediaCacheService {
     };
   }
 
-  async preloadIncidentMedia(incidentId: string, incidentData: any): Promise<void> {
+  async preloadIncidentMedia(incidentId: string, incidentData: { real_files?: string[]; detected_events?: Array<{ image_path?: string }> }): Promise<void> {
     console.log('🔄 Preloading media for incident:', incidentId);
     
-    const promises: Promise<any>[] = [];
+    const promises: Promise<unknown>[] = [];
     
     // Preload video
     if (incidentData.real_files && incidentData.real_files.length > 0) {
@@ -232,7 +232,7 @@ class MediaCacheService {
     
     // Preload all scene images
     const imagePaths = incidentData.detected_events
-      ?.map((event: any) => event.image_path)
+      ?.map((event) => event.image_path)
       .filter(Boolean) || [];
     
     if (imagePaths.length > 0) {

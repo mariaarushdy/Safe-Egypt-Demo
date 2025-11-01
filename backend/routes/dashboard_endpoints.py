@@ -8,6 +8,7 @@ from services.dashboard import (
     manage_users_service
 )
 from typing import Optional
+import re
 import os
 import hashlib
 
@@ -120,6 +121,13 @@ class CreateUserRequest(BaseModel):
 @dashboard_router.post("/users")
 async def create_dashboard_user(request: CreateUserRequest):
     """Create a new dashboard user (admin only)."""
+    # Enforce strong password: 8-128 chars, at least one lowercase, uppercase, digit, special
+    pattern = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,128}$")
+    if not pattern.match(request.password):
+        raise HTTPException(status_code=400, detail=(
+            "Password is too weak. It must be at least 8 characters and include at least one uppercase letter, "
+            "one lowercase letter, one number, and one special character."
+        ))
     from services.dashboard import create_dashboard_user_service
     result = create_dashboard_user_service(request.username, request.full_name, request.password)
     if result["status"] == "error":

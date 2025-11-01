@@ -318,7 +318,7 @@ export const fetchIncidentImage = async (incidentId: string, imagePath: string):
 };
 
 // Update incident status (accept/reject)
-export const updateIncidentStatus = async (incidentId: string, status: 'accepted' | 'rejected'): Promise<any> => {
+export const updateIncidentStatus = async (incidentId: string, status: 'accepted' | 'rejected'): Promise<{ status: string; message: string; incident?: unknown }> => {
   try {
     console.log('Updating incident status:', incidentId, 'to', status);
     

@@ -46,6 +46,18 @@ interface DashboardUser {
   created_at: string;
 }
 
+type MemStats = {
+  videos: { count: number; sizeMB: number };
+  images: { count: number; sizeMB: number };
+  total: { sizeMB: number; utilizationPercent: number };
+};
+
+type PersistStats = {
+  videos: { count: number; totalSizeMB: number };
+  images: { count: number; totalSizeMB: number };
+  total: { totalSizeMB: number; count: number };
+};
+
 const Settings = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [highRiskThreshold, setHighRiskThreshold] = useState([75]);
@@ -57,14 +69,16 @@ const Settings = () => {
     "supervisor@emergency.gov"
   ]);
   const [newEmail, setNewEmail] = useState("");
-  const [cacheStats, setCacheStats] = useState<any>(null);
-  const [persistentStats, setPersistentStats] = useState<any>(null);
+  const [cacheStats, setCacheStats] = useState<MemStats | null>(null);
+  const [persistentStats, setPersistentStats] = useState<PersistStats | null>(null);
   const [loadingCache, setLoadingCache] = useState(false);
   const [showAddUser, setShowAddUser] = useState(false);
   const [addUserLoading, setAddUserLoading] = useState(false);
   const [addUserError, setAddUserError] = useState<string | null>(null);
   const [addUserSuccess, setAddUserSuccess] = useState<string | null>(null);
   const [newUser, setNewUser] = useState({ username: "", full_name: "", password: "" });
+  const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
+  const [editPasswordErrors, setEditPasswordErrors] = useState<string[]>([]);
   const { t } = useLanguage();
 
   const [editUser, setEditUser] = useState<DashboardUser | null>(null);
@@ -95,7 +109,21 @@ const Settings = () => {
       const memStats = mediaCacheService.getStats();
       const dbStats = await persistentMediaCache.getStats();
       setCacheStats(memStats);
-      setPersistentStats(dbStats);
+      // Normalize types: ensure totalSizeMB is a number to match PersistStats
+      setPersistentStats({
+        videos: {
+          count: dbStats.videos.count,
+          totalSizeMB: parseFloat(String(dbStats.videos.totalSizeMB)),
+        },
+        images: {
+          count: dbStats.images.count,
+          totalSizeMB: parseFloat(String(dbStats.images.totalSizeMB)),
+        },
+        total: {
+          count: dbStats.total.count,
+          totalSizeMB: parseFloat(String(dbStats.total.totalSizeMB)),
+        },
+      });
     } catch (error) {
       console.error('Failed to load cache stats:', error);
     } finally {
@@ -154,11 +182,29 @@ const Settings = () => {
     setEmailRecipients(emailRecipients.filter(e => e !== email));
   };
 
+  const validatePassword = (pw: string): string[] => {
+    const errs: string[] = [];
+    if (pw.length < 8) errs.push(t('settings.passwordReq8Chars'));
+    if (!/[a-z]/.test(pw)) errs.push(t('settings.passwordReqLowercase'));
+    if (!/[A-Z]/.test(pw)) errs.push(t('settings.passwordReqUppercase'));
+    if (!/\d/.test(pw)) errs.push(t('settings.passwordReqNumber'));
+    if (!/[^\w\s]/.test(pw)) errs.push(t('settings.passwordReqSpecial'));
+    return errs;
+  };
+
   const handleAddUser = async () => {
     setAddUserLoading(true);
     setAddUserError(null);
     setAddUserSuccess(null);
     try {
+      // Frontend password strength validation
+      const errs = validatePassword(newUser.password || "");
+      setPasswordErrors(errs);
+      if (errs.length > 0) {
+        setAddUserError(t('settings.passwordWeak'));
+        return;
+      }
+
       const res = await fetch("http://localhost:8000/api/dashboard/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -166,15 +212,17 @@ const Settings = () => {
       });
       const data = await res.json();
       if (!res.ok || data.status !== "success") {
-        setAddUserError(data.message || "Failed to add user");
+        setAddUserError(data.message || t('settings.failedToAddUser'));
       } else {
-        setAddUserSuccess("User created successfully");
+        setAddUserSuccess(t('settings.userCreatedSuccess'));
         setNewUser({ username: "", full_name: "", password: "" });
+        setPasswordErrors([]);
         loadUsersData();
         setShowAddUser(false);
       }
-    } catch (e: any) {
-      setAddUserError(e.message || "Failed to add user");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setAddUserError(msg || t('settings.failedToAddUser'));
     } finally {
       setAddUserLoading(false);
     }
@@ -186,6 +234,7 @@ const Settings = () => {
     setEditUserModalOpen(true);
     setEditUserError(null);
     setEditUserSuccess(null);
+    setEditPasswordErrors([]);
   };
 
   const handleEditUser = async () => {
@@ -194,6 +243,17 @@ const Settings = () => {
     setEditUserError(null);
     setEditUserSuccess(null);
     try {
+      // Validate password if provided
+      if (editUserFields.password) {
+        const errs = validatePassword(editUserFields.password);
+        setEditPasswordErrors(errs);
+        if (errs.length > 0) {
+          setEditUserError(t('settings.passwordWeak'));
+          setEditUserLoading(false);
+          return;
+        }
+      }
+
       // Only include non-empty fields in the request
       const updateData: Record<string, string> = {};
       if (editUserFields.full_name) updateData.full_name = editUserFields.full_name;
@@ -206,14 +266,16 @@ const Settings = () => {
       });
       const data = await res.json();
       if (!res.ok || data.status !== "success") {
-        setEditUserError(data.message || "Failed to update user");
+        setEditUserError(data.message || t('settings.failedToUpdateUser'));
       } else {
-        setEditUserSuccess("User updated successfully");
+        setEditUserSuccess(t('settings.userUpdatedSuccess'));
+        setEditPasswordErrors([]);
         setEditUserModalOpen(false);
         loadUsersData();
       }
-    } catch (e: any) {
-      setEditUserError(e.message || "Failed to update user");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setEditUserError(msg || t('settings.failedToUpdateUser'));
     } finally {
       setEditUserLoading(false);
     }
@@ -229,13 +291,14 @@ const Settings = () => {
       });
       const data = await res.json();
       if (!res.ok || data.status !== "success") {
-        setDeleteUserError(data.message || "Failed to delete user");
+        setDeleteUserError(data.message || t('settings.failedToDeleteUser'));
       } else {
         setDeleteUserId(null);
         loadUsersData();
       }
-    } catch (e: any) {
-      setDeleteUserError(e.message || "Failed to delete user");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setDeleteUserError(msg || t('settings.failedToDeleteUser'));
     } finally {
       setDeleteUserLoading(false);
     }
@@ -289,7 +352,16 @@ const Settings = () => {
                         {t('settings.userManagementDescription')}
                       </CardDescription>
                     </div>
-                    <Dialog open={showAddUser} onOpenChange={setShowAddUser}>
+                    <Dialog open={showAddUser} onOpenChange={(open) => {
+                      setShowAddUser(open);
+                      if (!open) {
+                        // Reset form and errors when closing
+                        setNewUser({ username: "", full_name: "", password: "" });
+                        setPasswordErrors([]);
+                        setAddUserError(null);
+                        setAddUserSuccess(null);
+                      }
+                    }}>
                       <DialogTrigger asChild>
                         <Button className="flex items-center gap-2">
                           <Plus className="h-4 w-4" />
@@ -312,13 +384,29 @@ const Settings = () => {
                           </div>
                           <div>
                             <Label>{t('settings.password')}</Label>
-                            <Input type="password" value={newUser.password} onChange={e => setNewUser(u => ({ ...u, password: e.target.value }))} />
+                            <Input
+                              type="password"
+                              value={newUser.password}
+                              onChange={e => {
+                                const val = e.target.value;
+                                setNewUser(u => ({ ...u, password: val }));
+                                // live validation with localized messages
+                                setPasswordErrors(validatePassword(val));
+                              }}
+                            />
+                            {passwordErrors.length > 0 && (
+                              <ul className="mt-2 text-xs text-red-500 list-disc pl-5 space-y-1">
+                                {passwordErrors.map((e, i) => (
+                                  <li key={i}>{e}</li>
+                                ))}
+                              </ul>
+                            )}
                           </div>
                           {addUserError && <div className="text-red-500 text-sm">{addUserError}</div>}
                           {addUserSuccess && <div className="text-green-600 text-sm">{addUserSuccess}</div>}
                         </div>
                         <DialogFooter>
-                          <Button onClick={handleAddUser} disabled={addUserLoading}>
+                          <Button onClick={handleAddUser} disabled={addUserLoading || passwordErrors.length > 0}>
                             {addUserLoading ? t('settings.updating') : t('settings.addNewUser')}
                           </Button>
                           <DialogClose asChild>
@@ -377,7 +465,15 @@ const Settings = () => {
                   </CardContent>
                 </Card>
                 {/* Edit User Dialog */}
-                <Dialog open={editUserModalOpen} onOpenChange={setEditUserModalOpen}>
+                <Dialog open={editUserModalOpen} onOpenChange={(open) => {
+                  setEditUserModalOpen(open);
+                  if (!open) {
+                    // Reset errors when closing
+                    setEditPasswordErrors([]);
+                    setEditUserError(null);
+                    setEditUserSuccess(null);
+                  }
+                }}>
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle>{t('settings.editUser')}</DialogTitle>
@@ -396,14 +492,30 @@ const Settings = () => {
                         <Input 
                           type="password" 
                           value={editUserFields.password} 
-                          onChange={e => setEditUserFields(f => ({ ...f, password: e.target.value }))} 
+                          onChange={e => {
+                            const val = e.target.value;
+                            setEditUserFields(f => ({ ...f, password: val }));
+                            // live validation for edit password
+                            if (val) {
+                              setEditPasswordErrors(validatePassword(val));
+                            } else {
+                              setEditPasswordErrors([]);
+                            }
+                          }} 
                         />
+                        {editPasswordErrors.length > 0 && (
+                          <ul className="mt-2 text-xs text-red-500 list-disc pl-5 space-y-1">
+                            {editPasswordErrors.map((e, i) => (
+                              <li key={i}>{e}</li>
+                            ))}
+                          </ul>
+                        )}
                       </div>
                       {editUserError && <div className="text-red-500 text-sm">{editUserError}</div>}
                       {editUserSuccess && <div className="text-green-600 text-sm">{editUserSuccess}</div>}
                     </div>
                     <DialogFooter>
-                      <Button onClick={handleEditUser} disabled={editUserLoading}>
+                      <Button onClick={handleEditUser} disabled={editUserLoading || (editUserFields.password !== "" && editPasswordErrors.length > 0)}>
                         {editUserLoading ? t('settings.updating') : t('settings.updateUser')}
                       </Button>
                       <DialogClose asChild>
