@@ -1,6 +1,11 @@
 from fastapi import APIRouter, HTTPException, Response, Request
 from fastapi.responses import FileResponse
-from services.dashboard import get_incidents_summary_service, get_incident_by_id_service, update_incident_status_service
+from services.dashboard import (
+    get_incidents_summary_service, 
+    get_incident_by_id_service, 
+    update_incident_status_service,
+    manage_users_service
+)
 from pydantic import BaseModel, validator
 import os
 import hashlib
@@ -40,6 +45,7 @@ async def dashboard_root():
         "status": "Active",
         "available_endpoints": [
             "GET /api/dashboard/ - This endpoint",
+            "GET /api/dashboard/users - Get users summary",
             "GET /api/dashboard/incidents - Get incidents summary",
             "GET /api/dashboard/incident/{incident_id} - Get detailed incident information",
             "POST /api/dashboard/incident/{incident_id}/video - Serve video file (body: {file_path})",
@@ -47,6 +53,14 @@ async def dashboard_root():
             "POST /api/dashboard/incident/{incident_id}/status - Update incident status (body: {status})"
         ]
     }
+
+@dashboard_router.get("/users")
+async def get_users():
+    """Get summary of system users"""
+    users_data = manage_users_service()
+    if users_data["status"] == "error":
+        raise HTTPException(status_code=500, detail=users_data["message"])
+    return users_data
 
 @dashboard_router.get("/incidents")
 async def get_incidents_summary():

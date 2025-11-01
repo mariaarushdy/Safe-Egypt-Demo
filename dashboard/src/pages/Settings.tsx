@@ -13,6 +13,7 @@ import Sidebar from "@/components/Sidebar";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { mediaCacheService } from "@/services/mediaCacheService";
 import { persistentMediaCache } from "@/services/persistentMediaCache";
+import { UsersResponse, fetchUsers } from "@/lib/api";
 import { 
   Edit, 
   Trash2, 
@@ -26,62 +27,21 @@ import {
   HardDrive
 } from "lucide-react";
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: "Police" | "Fire" | "Medical" | "Civil Defense";
-  status: "Active" | "Inactive";
-  lastLogin: string;
+interface DashboardUser {
+  id: number;
+  username: string;
+  full_name: string;
+  is_active: boolean;
+  last_login: string | null;
+  created_at: string;
 }
-
-const mockUsers: User[] = [
-  {
-    id: "1",
-    name: "أحمد محمد",
-    email: "ahmed.mohammed@police.gov",
-    role: "Police",
-    status: "Active",
-    lastLogin: "2024-01-15 09:30"
-  },
-  {
-    id: "2",
-    name: "سارة أحمد",
-    email: "sara.ahmed@fire.gov",
-    role: "Fire",
-    status: "Active",
-    lastLogin: "2024-01-15 08:45"
-  },
-  {
-    id: "3",
-    name: "محمد علي",
-    email: "mohammed.ali@medical.gov",
-    role: "Medical",
-    status: "Active",
-    lastLogin: "2024-01-14 16:20"
-  },
-  {
-    id: "4",
-    name: "فاطمة حسن",
-    email: "fatima.hassan@civil.gov",
-    role: "Civil Defense",
-    status: "Inactive",
-    lastLogin: "2024-01-10 14:15"
-  },
-  {
-    id: "5",
-    name: "خالد يوسف",
-    email: "khalid.youssef@police.gov",
-    role: "Police",
-    status: "Active",
-    lastLogin: "2024-01-15 07:20"
-  }
-];
 
 const Settings = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [highRiskThreshold, setHighRiskThreshold] = useState([75]);
   const [responseTimeAlert, setResponseTimeAlert] = useState([10]);
+  const [usersData, setUsersData] = useState<UsersResponse | null>(null);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [emailRecipients, setEmailRecipients] = useState([
     "admin@emergency.gov",
     "supervisor@emergency.gov"
@@ -91,6 +51,18 @@ const Settings = () => {
   const [persistentStats, setPersistentStats] = useState<any>(null);
   const [loadingCache, setLoadingCache] = useState(false);
   const { t } = useLanguage();
+
+  const loadUsersData = async () => {
+    setIsLoadingUsers(true);
+    try {
+      const data = await fetchUsers();
+      setUsersData(data);
+    } catch (error) {
+      console.error('Error loading users data:', error);
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
 
   const loadCacheStats = async () => {
     setLoadingCache(true);
@@ -108,6 +80,7 @@ const Settings = () => {
 
   useEffect(() => {
     loadCacheStats();
+    loadUsersData();
   }, []);
 
   const handleClearMemoryCache = () => {
@@ -200,7 +173,9 @@ const Settings = () => {
                   <CardHeader className="flex flex-row items-center justify-between">
                     <div>
                       <CardTitle>User Management</CardTitle>
-                      <CardDescription>Manage authority user accounts and permissions</CardDescription>
+                      <CardDescription>
+                        Manage dashboard user accounts and permissions
+                      </CardDescription>
                     </div>
                     <Button className="flex items-center gap-2">
                       <Plus className="h-4 w-4" />
@@ -208,33 +183,39 @@ const Settings = () => {
                     </Button>
                   </CardHeader>
                   <CardContent>
+                    <div className="mb-6">
+                      <p className="text-sm text-gray-600 dark:text-gray-300">
+                        Total Dashboard Users: {usersData?.total_dashboard_users ?? 0}
+                      </p>
+                    </div>
+                    
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Role</TableHead>
+                          <TableHead>Full Name</TableHead>
+                          <TableHead>Username</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Last Login</TableHead>
                           <TableHead>Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {mockUsers.map((user) => (
+                        {isLoadingUsers ? (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center py-4">
+                              Loading users...
+                            </TableCell>
+                          </TableRow>
+                        ) : usersData?.dashboard_users.map((user) => (
                           <TableRow key={user.id}>
-                            <TableCell className="font-medium">{user.name}</TableCell>
-                            <TableCell>{user.email}</TableCell>
+                            <TableCell className="font-medium">{user.full_name}</TableCell>
+                            <TableCell>{user.username}</TableCell>
                             <TableCell>
-                              <Badge variant={getRoleBadgeVariant(user.role)}>
-                                {user.role}
+                              <Badge variant={user.is_active ? "success" : "outline"}>
+                                {user.is_active ? "Active" : "Inactive"}
                               </Badge>
                             </TableCell>
-                            <TableCell>
-                              <Badge variant={getStatusBadgeVariant(user.status)}>
-                                {user.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>{user.lastLogin}</TableCell>
+                            <TableCell>{user.last_login || "Never"}</TableCell>
                             <TableCell className="space-x-2">
                               <Button variant="outline" size="sm">
                                 <Edit className="h-3 w-3" />
@@ -585,7 +566,7 @@ const Settings = () => {
                     <Separator />
 
                     <div className="space-y-3">
-                      <Button variant="destructive" onClick={handleClearAllCache} disabled={loadingCache}>
+                      <Button variant="danger" onClick={handleClearAllCache} disabled={loadingCache}>
                         Clear All Caches
                       </Button>
                       <p className="text-xs text-muted-foreground">

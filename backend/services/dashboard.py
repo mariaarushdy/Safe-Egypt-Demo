@@ -149,6 +149,24 @@ def manage_users_service() -> Dict[str, Any]:
         # Combined totals
         combined_total = total_dashboard + total_app
 
+        # Get dashboard users list
+        cur.execute("""
+            SELECT id, username, full_name, is_active, last_login, created_at
+            FROM dashboard_users
+            ORDER BY created_at DESC;
+        """)
+        dashboard_users = [
+            {
+                "id": row[0],
+                "username": row[1],
+                "full_name": row[2],
+                "is_active": row[3],
+                "last_login": row[4].isoformat() if row[4] else None,
+                "created_at": row[5].isoformat() if row[5] else None
+            }
+            for row in cur.fetchall()
+        ]
+
         cur.close()
         conn.close()
 
@@ -160,7 +178,8 @@ def manage_users_service() -> Dict[str, Any]:
             "total_app_users": total_app,
             "registered_app_users": registered_app,
             "anonymous_app_users": anonymous_app,
-            "total_users": combined_total
+            "total_users": combined_total,
+            "dashboard_users": dashboard_users
         }
     except Exception as e:
         logger.error(f"Error in manage_users_service: {str(e)}", exc_info=True)
