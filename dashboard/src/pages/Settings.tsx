@@ -67,6 +67,16 @@ const Settings = () => {
   const [newUser, setNewUser] = useState({ username: "", full_name: "", password: "" });
   const { t } = useLanguage();
 
+  const [editUser, setEditUser] = useState<DashboardUser | null>(null);
+  const [editUserModalOpen, setEditUserModalOpen] = useState(false);
+  const [editUserLoading, setEditUserLoading] = useState(false);
+  const [editUserError, setEditUserError] = useState<string | null>(null);
+  const [editUserSuccess, setEditUserSuccess] = useState<string | null>(null);
+  const [editUserFields, setEditUserFields] = useState({ full_name: "", password: "" });
+  const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
+  const [deleteUserLoading, setDeleteUserLoading] = useState(false);
+  const [deleteUserError, setDeleteUserError] = useState<string | null>(null);
+
   const loadUsersData = async () => {
     setIsLoadingUsers(true);
     try {
@@ -167,6 +177,67 @@ const Settings = () => {
       setAddUserError(e.message || "Failed to add user");
     } finally {
       setAddUserLoading(false);
+    }
+  };
+
+  const openEditUserModal = (user: DashboardUser) => {
+    setEditUser(user);
+    setEditUserFields({ full_name: user.full_name, password: "" });
+    setEditUserModalOpen(true);
+    setEditUserError(null);
+    setEditUserSuccess(null);
+  };
+
+  const handleEditUser = async () => {
+    if (!editUser) return;
+    setEditUserLoading(true);
+    setEditUserError(null);
+    setEditUserSuccess(null);
+    try {
+      // Only include non-empty fields in the request
+      const updateData: Record<string, string> = {};
+      if (editUserFields.full_name) updateData.full_name = editUserFields.full_name;
+      if (editUserFields.password) updateData.password = editUserFields.password;
+
+      const res = await fetch(`http://localhost:8000/api/dashboard/users/${editUser.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updateData),
+      });
+      const data = await res.json();
+      if (!res.ok || data.status !== "success") {
+        setEditUserError(data.message || "Failed to update user");
+      } else {
+        setEditUserSuccess("User updated successfully");
+        setEditUserModalOpen(false);
+        loadUsersData();
+      }
+    } catch (e: any) {
+      setEditUserError(e.message || "Failed to update user");
+    } finally {
+      setEditUserLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!deleteUserId) return;
+    setDeleteUserLoading(true);
+    setDeleteUserError(null);
+    try {
+      const res = await fetch(`http://localhost:8000/api/dashboard/users/${deleteUserId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok || data.status !== "success") {
+        setDeleteUserError(data.message || "Failed to delete user");
+      } else {
+        setDeleteUserId(null);
+        loadUsersData();
+      }
+    } catch (e: any) {
+      setDeleteUserError(e.message || "Failed to delete user");
+    } finally {
+      setDeleteUserLoading(false);
     }
   };
 
@@ -292,10 +363,10 @@ const Settings = () => {
                             </TableCell>
                             <TableCell>{user.last_login || "Never"}</TableCell>
                             <TableCell className="space-x-2">
-                              <Button variant="outline" size="sm">
+                              <Button variant="outline" size="sm" onClick={() => openEditUserModal(user)}>
                                 <Edit className="h-3 w-3" />
                               </Button>
-                              <Button variant="outline" size="sm">
+                              <Button variant="outline" size="sm" onClick={() => setDeleteUserId(user.id)}>
                                 <Trash2 className="h-3 w-3 text-red-500" />
                               </Button>
                             </TableCell>
@@ -305,6 +376,65 @@ const Settings = () => {
                     </Table>
                   </CardContent>
                 </Card>
+                {/* Edit User Dialog */}
+                <Dialog open={editUserModalOpen} onOpenChange={setEditUserModalOpen}>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Edit User</DialogTitle>
+                      <DialogDescription>Update user details.</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Full Name</Label>
+                        <Input 
+                          value={editUserFields.full_name} 
+                          onChange={e => setEditUserFields(f => ({ ...f, full_name: e.target.value }))} 
+                        />
+                      </div>
+                      <div>
+                        <Label>New Password (leave blank to keep current)</Label>
+                        <Input 
+                          type="password" 
+                          value={editUserFields.password} 
+                          onChange={e => setEditUserFields(f => ({ ...f, password: e.target.value }))} 
+                        />
+                      </div>
+                      {editUserError && <div className="text-red-500 text-sm">{editUserError}</div>}
+                      {editUserSuccess && <div className="text-green-600 text-sm">{editUserSuccess}</div>}
+                    </div>
+                    <DialogFooter>
+                      <Button onClick={handleEditUser} disabled={editUserLoading}>
+                        {editUserLoading ? "Updating..." : "Update User"}
+                      </Button>
+                      <DialogClose asChild>
+                        <Button variant="outline">Cancel</Button>
+                      </DialogClose>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+
+                {/* Delete User Dialog */}
+                <Dialog open={deleteUserId !== null} onOpenChange={(open) => !open && setDeleteUserId(null)}>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Delete User</DialogTitle>
+                      <DialogDescription>Are you sure you want to delete this user? This action cannot be undone.</DialogDescription>
+                    </DialogHeader>
+                    {deleteUserError && <div className="text-red-500 text-sm">{deleteUserError}</div>}
+                    <DialogFooter>
+                      <Button 
+                        variant="danger" 
+                        onClick={handleDeleteUser} 
+                        disabled={deleteUserLoading}
+                      >
+                        {deleteUserLoading ? "Deleting..." : "Delete User"}
+                      </Button>
+                      <DialogClose asChild>
+                        <Button variant="outline">Cancel</Button>
+                      </DialogClose>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </TabsContent>
 
               {/* Alert Settings Tab */}

@@ -198,6 +198,124 @@ def get_system_status_service() -> Dict[str, Any]:
         Dict containing system status
     """
     # TODO: Implement system monitoring
+    
+def edit_dashboard_user_service(user_id: int, full_name: Optional[str], password: Optional[str]) -> Dict[str, Any]:
+    """
+    Edit a dashboard user's details
+    
+    Args:
+        user_id: ID of the user to edit
+        full_name: New full name (optional)
+        password: New password (optional)
+        
+    Returns:
+        Dict containing operation status
+    """
+    from models.db_helper import get_db_connection
+    import bcrypt
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # Check if user exists
+        cur.execute("SELECT id FROM dashboard_users WHERE id = %s;", (user_id,))
+        if not cur.fetchone():
+            cur.close()
+            conn.close()
+            return {
+                "status": "error",
+                "message": "User not found"
+            }
+
+        # Build update query dynamically based on provided fields
+        update_parts = []
+        params = []
+        
+        if full_name is not None:
+            update_parts.append("full_name = %s")
+            params.append(full_name)
+            
+        if password is not None:
+            update_parts.append("password_hash = %s")
+            # Hash the new password
+            salt = bcrypt.gensalt()
+            hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+            params.append(hashed.decode('utf-8'))
+
+        if not update_parts:
+            cur.close()
+            conn.close()
+            return {
+                "status": "error",
+                "message": "No fields to update"
+            }
+
+        # Construct and execute update query
+        query = f"UPDATE dashboard_users SET {', '.join(update_parts)} WHERE id = %s"
+        params.append(user_id)
+        cur.execute(query, params)
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return {
+            "status": "success",
+            "message": "User updated successfully"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in edit_dashboard_user_service: {str(e)}", exc_info=True)
+        return {
+            "status": "error",
+            "message": f"Failed to update user: {str(e)}"
+        }
+
+def delete_dashboard_user_service(user_id: int) -> Dict[str, Any]:
+    """
+    Delete a dashboard user
+    
+    Args:
+        user_id: ID of the user to delete
+        
+    Returns:
+        Dict containing operation status
+    """
+    from models.db_helper import get_db_connection
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # Check if user exists
+        cur.execute("SELECT id FROM dashboard_users WHERE id = %s;", (user_id,))
+        if not cur.fetchone():
+            cur.close()
+            conn.close()
+            return {
+                "status": "error",
+                "message": "User not found"
+            }
+
+        # Delete the user
+        cur.execute("DELETE FROM dashboard_users WHERE id = %s;", (user_id,))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return {
+            "status": "success",
+            "message": "User deleted successfully"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in delete_dashboard_user_service: {str(e)}", exc_info=True)
+        return {
+            "status": "error",
+            "message": f"Failed to delete user: {str(e)}"
+        }
     return {
         "status": "not_implemented",
         "message": "System monitoring service to be implemented",

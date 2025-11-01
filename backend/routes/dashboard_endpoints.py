@@ -30,6 +30,29 @@ class StatusUpdateRequest(BaseModel):
             raise ValueError('Status must be either "accepted" or "rejected"')
         return v.lower()
 
+# Edit user request model
+class EditUserRequest(BaseModel):
+    full_name: Optional[str] = Field(None, min_length=3, max_length=100)
+    password: Optional[str] = Field(None, min_length=8, max_length=128)
+
+# Edit user endpoint
+@dashboard_router.put("/users/{user_id}")
+async def edit_dashboard_user(user_id: int, request: EditUserRequest):
+    from services.dashboard import edit_dashboard_user_service
+    result = edit_dashboard_user_service(user_id, request.full_name, request.password)
+    if result["status"] == "error":
+        raise HTTPException(status_code=400, detail=result["message"])
+    return result
+
+# Delete user endpoint
+@dashboard_router.delete("/users/{user_id}")
+async def delete_dashboard_user(user_id: int):
+    from services.dashboard import delete_dashboard_user_service
+    result = delete_dashboard_user_service(user_id)
+    if result["status"] == "error":
+        raise HTTPException(status_code=400, detail=result["message"])
+    return result
+
 def get_file_etag(file_path: str) -> str:
     """Generate ETag for caching"""
     try:
