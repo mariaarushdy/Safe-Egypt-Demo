@@ -123,13 +123,53 @@ def manage_users_service() -> Dict[str, Any]:
     Returns:
         Dict containing user data
     """
-    # TODO: Implement user management
-    return {
-        "status": "not_implemented",
-        "message": "User management service to be implemented",
-        "total_users": 0,
-        "active_users": 0
-    }
+    from models.db_helper import get_db_connection
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # Dashboard users
+        cur.execute("SELECT COUNT(*) FROM dashboard_users;")
+        total_dashboard = cur.fetchone()[0] or 0
+
+        cur.execute("SELECT COUNT(*) FROM dashboard_users WHERE is_active = TRUE;")
+        active_dashboard = cur.fetchone()[0] or 0
+
+        # App users (mobile profiles)
+        cur.execute("SELECT COUNT(*) FROM app_users;")
+        total_app = cur.fetchone()[0] or 0
+
+        # Registered app users (have national_id) vs anonymous
+        cur.execute("SELECT COUNT(*) FROM app_users WHERE national_id IS NOT NULL;")
+        registered_app = cur.fetchone()[0] or 0
+
+        anonymous_app = total_app - registered_app
+
+        # Combined totals
+        combined_total = total_dashboard + total_app
+
+        cur.close()
+        conn.close()
+
+        return {
+            "status": "success",
+            "message": "User management summary retrieved",
+            "total_dashboard_users": total_dashboard,
+            "active_dashboard_users": active_dashboard,
+            "total_app_users": total_app,
+            "registered_app_users": registered_app,
+            "anonymous_app_users": anonymous_app,
+            "total_users": combined_total
+        }
+    except Exception as e:
+        logger.error(f"Error in manage_users_service: {str(e)}", exc_info=True)
+        return {
+            "status": "error",
+            "message": f"Failed to retrieve user summary: {str(e)}",
+            "total_users": 0,
+            "active_users": 0
+        }
 
 def get_system_status_service() -> Dict[str, Any]:
     """
