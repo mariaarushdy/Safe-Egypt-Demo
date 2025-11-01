@@ -163,53 +163,37 @@ class UserService:
             self.conn.rollback()
             raise Exception(f"Failed to create dashboard user: {str(e)}")
     
-    def authenticate_user(self, username: str, password: str, 
-                         user_type: Optional[str] = None) -> Optional[Dict[str, Any]]:
-        """Authenticate a user by username and password"""
+    def authenticate_user(self, username: str, password: str) -> Optional[Dict[str, Any]]:
+        """Authenticate a dashboard user by username and password"""
         try:
             query = """
-                SELECT id, username, email, password_hash, full_name, phone_number,
-                       user_type, role, is_active, is_verified
-                FROM users
+                SELECT id, username, password_hash, full_name, is_active, last_login
+                FROM dashboard_users
                 WHERE username = %s
             """
             params = [username]
-            
-            if user_type:
-                query += " AND user_type = %s"
-                params.append(user_type)
-            
             self.cur.execute(query, params)
             user = self.cur.fetchone()
-            
             if not user:
                 return None
-            
             # Check if user is active
-            if not user[8]:  # is_active
+            if not user[4]:  # is_active
                 return None
-            
-            # Verify password
-            if not AuthService.verify_password(password, user[3]):
+            # Verify password (password_hash is at index 2)
+            if not AuthService.verify_password(password, user[2]):
                 return None
-            
-            # Update last login
+            # Update last login in dashboard_users
             self.cur.execute("""
-                UPDATE users SET last_login = CURRENT_TIMESTAMP
+                UPDATE dashboard_users SET last_login = CURRENT_TIMESTAMP
                 WHERE id = %s;
             """, (user[0],))
             self.conn.commit()
-            
             return {
                 "id": user[0],
                 "username": user[1],
-                "email": user[2],
-                "full_name": user[4],
-                "phone_number": user[5],
-                "user_type": user[6],
-                "role": user[7],
-                "is_active": user[8],
-                "is_verified": user[9]
+                "full_name": user[3],
+                "is_active": user[4],
+                "last_login": user[5]
             }
         except Exception as e:
             print(f"Authentication error: {str(e)}")
