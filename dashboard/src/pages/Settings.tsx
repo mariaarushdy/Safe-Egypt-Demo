@@ -284,34 +284,34 @@ const Settings = () => {
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between">
                     <div>
-                      <CardTitle>User Management</CardTitle>
+                      <CardTitle>{t('settings.userManagementTitle')}</CardTitle>
                       <CardDescription>
-                        Manage dashboard user accounts and permissions
+                        {t('settings.userManagementDescription')}
                       </CardDescription>
                     </div>
                     <Dialog open={showAddUser} onOpenChange={setShowAddUser}>
                       <DialogTrigger asChild>
                         <Button className="flex items-center gap-2">
                           <Plus className="h-4 w-4" />
-                          Add New User
+                          {t('settings.addNewUser')}
                         </Button>
                       </DialogTrigger>
                       <DialogContent>
                         <DialogHeader>
-                          <DialogTitle>Add New User</DialogTitle>
-                          <DialogDescription>Enter credentials for the new dashboard user.</DialogDescription>
+                          <DialogTitle>{t('settings.addNewUser')}</DialogTitle>
+                          <DialogDescription>{t('settings.userManagementDescription')}</DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4">
                           <div>
-                            <Label>Username</Label>
+                            <Label>{t('settings.username')}</Label>
                             <Input value={newUser.username} onChange={e => setNewUser(u => ({ ...u, username: e.target.value }))} />
                           </div>
                           <div>
-                            <Label>Full Name</Label>
+                            <Label>{t('settings.fullName')}</Label>
                             <Input value={newUser.full_name} onChange={e => setNewUser(u => ({ ...u, full_name: e.target.value }))} />
                           </div>
                           <div>
-                            <Label>Password</Label>
+                            <Label>{t('settings.password')}</Label>
                             <Input type="password" value={newUser.password} onChange={e => setNewUser(u => ({ ...u, password: e.target.value }))} />
                           </div>
                           {addUserError && <div className="text-red-500 text-sm">{addUserError}</div>}
@@ -319,10 +319,10 @@ const Settings = () => {
                         </div>
                         <DialogFooter>
                           <Button onClick={handleAddUser} disabled={addUserLoading}>
-                            {addUserLoading ? "Adding..." : "Add User"}
+                            {addUserLoading ? t('settings.updating') : t('settings.addNewUser')}
                           </Button>
                           <DialogClose asChild>
-                            <Button variant="outline">Cancel</Button>
+                            <Button variant="outline">{t('settings.cancel')}</Button>
                           </DialogClose>
                         </DialogFooter>
                       </DialogContent>
@@ -331,18 +331,18 @@ const Settings = () => {
                   <CardContent>
                     <div className="mb-6">
                       <p className="text-sm text-gray-600 dark:text-gray-300">
-                        Total Dashboard Users: {usersData?.total_dashboard_users ?? 0}
+                        {t('settings.totalDashboardUsers', { count: String(usersData?.total_dashboard_users ?? 0) })}
                       </p>
                     </div>
                     
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Full Name</TableHead>
-                          <TableHead>Username</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Last Login</TableHead>
-                          <TableHead>Actions</TableHead>
+                          <TableHead>{t('settings.fullName')}</TableHead>
+                          <TableHead>{t('settings.username')}</TableHead>
+                          <TableHead>{t('settings.status')}</TableHead>
+                          <TableHead>{t('settings.lastLogin')}</TableHead>
+                          <TableHead>{t('settings.actions')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -380,19 +380,19 @@ const Settings = () => {
                 <Dialog open={editUserModalOpen} onOpenChange={setEditUserModalOpen}>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Edit User</DialogTitle>
-                      <DialogDescription>Update user details.</DialogDescription>
+                      <DialogTitle>{t('settings.editUser')}</DialogTitle>
+                      <DialogDescription>{t('settings.editUserDescription')}</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
                       <div>
-                        <Label>Full Name</Label>
+                        <Label>{t('settings.fullName')}</Label>
                         <Input 
                           value={editUserFields.full_name} 
                           onChange={e => setEditUserFields(f => ({ ...f, full_name: e.target.value }))} 
                         />
                       </div>
                       <div>
-                        <Label>New Password (leave blank to keep current)</Label>
+                        <Label>{t('settings.newPassword')}</Label>
                         <Input 
                           type="password" 
                           value={editUserFields.password} 
@@ -404,10 +404,10 @@ const Settings = () => {
                     </div>
                     <DialogFooter>
                       <Button onClick={handleEditUser} disabled={editUserLoading}>
-                        {editUserLoading ? "Updating..." : "Update User"}
+                        {editUserLoading ? t('settings.updating') : t('settings.updateUser')}
                       </Button>
                       <DialogClose asChild>
-                        <Button variant="outline">Cancel</Button>
+                        <Button variant="outline">{t('settings.cancel')}</Button>
                       </DialogClose>
                     </DialogFooter>
                   </DialogContent>
@@ -417,8 +417,8 @@ const Settings = () => {
                 <Dialog open={deleteUserId !== null} onOpenChange={(open) => !open && setDeleteUserId(null)}>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Delete User</DialogTitle>
-                      <DialogDescription>Are you sure you want to delete this user? This action cannot be undone.</DialogDescription>
+                      <DialogTitle>{t('settings.deleteUser')}</DialogTitle>
+                      <DialogDescription>{t('settings.deleteUserDescription')}</DialogDescription>
                     </DialogHeader>
                     {deleteUserError && <div className="text-red-500 text-sm">{deleteUserError}</div>}
                     <DialogFooter>
@@ -427,7 +427,7 @@ const Settings = () => {
                         onClick={handleDeleteUser} 
                         disabled={deleteUserLoading}
                       >
-                        {deleteUserLoading ? "Deleting..." : "Delete User"}
+                        {deleteUserLoading ? t('settings.deleting') : t('settings.deleteUser')}
                       </Button>
                       <DialogClose asChild>
                         <Button variant="outline">Cancel</Button>
