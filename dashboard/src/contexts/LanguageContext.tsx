@@ -106,9 +106,10 @@ const translations = {
     'login.button': 'تسجيل الدخول',
     'login.systemInfo': 'نظام مراقبة شامل للبلاغات والحوادث',
     'login.successTitle': 'تم تسجيل الدخول بنجاح',
-    'login.successMessage': 'مرحباً بك يا {username} في نظام {authority}',
+    'login.successMessage': 'مرحباً بك يا {username}',
     'login.errorTitle': 'بيانات الدخول غير صحيحة',
-    'login.errorMessage': 'استخدم اسم المستخدم: maria، كلمة المرور: 1234، وحدد الجهة المناسبة',
+    'login.errorMessage': 'اسم المستخدم أو كلمة المرور غير صحيحة',
+    'login.networkError': 'حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى.',
     
     // Reports
     'reports.title': 'إدارة البلاغات',
@@ -325,9 +326,10 @@ const translations = {
     'login.button': 'Login',
     'login.systemInfo': 'Comprehensive monitoring system for reports and incidents',
     'login.successTitle': 'Login Successful',
-    'login.successMessage': 'Welcome {username} to the {authority} system',
+    'login.successMessage': 'Welcome {username}',
     'login.errorTitle': 'Invalid Credentials',
-    'login.errorMessage': 'Use username: maria, password: 1234, and select the appropriate authority',
+    'login.errorMessage': 'Invalid username or password',
+    'login.networkError': 'Network error occurred. Please try again.',
     
     // Reports
     'reports.title': 'Reports Management',

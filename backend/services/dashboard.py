@@ -499,7 +499,7 @@ def create_dashboard_user_service(username: str, full_name: str, password: str) 
     Returns a dict with status and message.
     """
     from models.db_helper import get_db_connection
-    import hashlib
+    import bcrypt
     try:
         conn = get_db_connection()
         cur = conn.cursor()
@@ -510,8 +510,9 @@ def create_dashboard_user_service(username: str, full_name: str, password: str) 
             conn.close()
             return {"status": "error", "message": "Username already exists."}
 
-        # Hash the password (simple SHA256 for demo; use bcrypt/argon2 in production)
-        password_hash = hashlib.sha256(password.encode()).hexdigest()
+        # Hash the password using bcrypt
+        salt = bcrypt.gensalt()
+        password_hash = bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
         cur.execute(
             """
             INSERT INTO dashboard_users (username, full_name, password_hash, is_active, created_at)

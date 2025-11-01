@@ -5,10 +5,14 @@ Handles user registration, login, and authentication for both mobile and dashboa
 
 import os
 import jwt
+import bcrypt
+import logging
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 from typing import Optional, Dict, Any
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -53,6 +57,112 @@ class AuthService:
         to_encode.update({"exp": expire, "iat": datetime.utcnow(), "type": "refresh"})
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=JWT_ALGORITHM)
         return encoded_jwt
+
+async def authenticate_dashboard_user(username: str, password: str) -> Dict[str, Any]:
+    """
+    Authenticate a dashboard user with username and password
+    
+    Args:
+        username: The username to authenticate
+        password: The password to verify
+        
+    Returns:
+        Dict containing authentication result and token if successful
+    """
+    from models.db_helper import get_db_connection
+    auth_service = AuthService()
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Get user from database
+        cur.execute("""
+            SELECT id, username, password_hash, full_name, is_active
+            FROM dashboard_users
+            WHERE username = %s;
+        """, (username,))
+        
+        user = cur.fetchone()
+        
+        logger.info(f"Authentication attempt for username: {username}")
+        logger.info(f"User found in database: {user is not None}")
+        
+        if not user:
+            logger.warning(f"User '{username}' not found in database")
+            return {
+                "status": "error",
+                "message": "Invalid username or password"
+            }
+            
+        user_id, db_username, password_hash, full_name, is_active = user
+        
+        # Check if user is active
+        if not is_active:
+            return {
+                "status": "error",
+                "message": "Account is inactive"
+            }
+        
+        # Verify password using bcrypt
+        try:
+            logger.info(f"Attempting password verification for user: {username}")
+            password_match = bcrypt.checkpw(password.encode('utf-8'), password_hash.encode('utf-8'))
+            logger.info(f"Password match result: {password_match}")
+            
+            if not password_match:
+                logger.warning(f"Invalid password for user: {username}")
+                return {
+                    "status": "error",
+                    "message": "Invalid username or password"
+                }
+        except Exception as e:
+            logger.error(f"Error verifying password for {username}: {str(e)}", exc_info=True)
+            return {
+                "status": "error",
+                "message": "Invalid username or password"
+            }
+        
+        # Generate JWT token
+        token_data = {
+            "sub": str(user_id),
+            "username": username,
+            "full_name": full_name
+        }
+        
+        access_token = auth_service.create_access_token(token_data)
+        
+        # Update last login
+        cur.execute("""
+            UPDATE dashboard_users 
+            SET last_login = NOW() 
+            WHERE id = %s;
+        """, (user_id,))
+        
+        conn.commit()
+        
+        return {
+            "status": "success",
+            "message": "Authentication successful",
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": {
+                "id": user_id,
+                "username": username,
+                "full_name": full_name
+            }
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Authentication failed: {str(e)}"
+        }
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
     
     @staticmethod
     def verify_token(token: str) -> Optional[Dict[str, Any]]:

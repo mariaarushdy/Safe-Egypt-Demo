@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from fastapi import APIRouter, HTTPException, Response, Request
 from fastapi.responses import FileResponse
 from services.dashboard import (
@@ -7,7 +7,6 @@ from services.dashboard import (
     update_incident_status_service,
     manage_users_service
 )
-from pydantic import BaseModel, validator
 from typing import Optional
 import os
 import hashlib
@@ -16,6 +15,10 @@ import hashlib
 dashboard_router = APIRouter()
 
 # Request models
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
 class VideoRequest(BaseModel):
     file_path: str
 
@@ -35,6 +38,15 @@ class StatusUpdateRequest(BaseModel):
 class EditUserRequest(BaseModel):
     full_name: Optional[str] = Field(None, min_length=3, max_length=100)
     password: Optional[str] = Field(None, min_length=8, max_length=128)
+
+# Login endpoint
+@dashboard_router.post("/login")
+async def login_dashboard_user(request: LoginRequest):
+    from services.auth import authenticate_dashboard_user
+    result = await authenticate_dashboard_user(request.username, request.password)
+    if result["status"] == "error":
+        raise HTTPException(status_code=401, detail=result["message"])
+    return result
 
 # Edit user endpoint
 @dashboard_router.put("/users/{user_id}")

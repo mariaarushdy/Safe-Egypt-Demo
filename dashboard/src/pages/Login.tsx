@@ -25,29 +25,49 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate authentication
-    setTimeout(() => {
-      const isValid =
-        credentials.username.trim().toLowerCase() === "maria" &&
-        credentials.password === "1234";
+    try {
+      const res = await fetch('http://localhost:8000/api/dashboard/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: credentials.username,
+          password: credentials.password,
+        }),
+      });
 
-      if (isValid) {
+      const data = await res.json();
+
+      if (res.ok) {
+        // Save token and user info to localStorage
+        localStorage.setItem('token', data.access_token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+
         toast({
           title: t('login.successTitle'),
           description: t('login.successMessage', { 
-            username: credentials.username
+            username: data.user.full_name || credentials.username
           }),
         });
+        
         navigate("/dashboard");
       } else {
         toast({
           variant: "destructive",
           title: t('login.errorTitle'),
-          description: t('login.errorMessage'),
+          description: data.detail || t('login.errorMessage'),
         });
       }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: t('login.errorTitle'),
+        description: t('login.networkError'),
+      });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   return (
