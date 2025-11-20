@@ -13,11 +13,12 @@ import Sidebar from "@/components/Sidebar";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { mediaCacheService } from "@/services/mediaCacheService";
 import { persistentMediaCache } from "@/services/persistentMediaCache";
-import { 
-  Edit, 
-  Trash2, 
-  Plus, 
-  TestTube, 
+import { UsersResponse, fetchUsers } from "@/lib/api";
+import {
+  Edit,
+  Trash2,
+  Plus,
+  TestTube,
   Users,
   Settings as SettingsIcon,
   Bell,
@@ -25,72 +26,82 @@ import {
   Database,
   HardDrive
 } from "lucide-react";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from "@/components/ui/dialog";
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: "Police" | "Fire" | "Medical" | "Civil Defense";
-  status: "Active" | "Inactive";
-  lastLogin: string;
+interface DashboardUser {
+  id: number;
+  username: string;
+  full_name: string;
+  is_active: boolean;
+  last_login: string | null;
+  created_at: string;
 }
 
-const mockUsers: User[] = [
-  {
-    id: "1",
-    name: "أحمد محمد",
-    email: "ahmed.mohammed@police.gov",
-    role: "Police",
-    status: "Active",
-    lastLogin: "2024-01-15 09:30"
-  },
-  {
-    id: "2",
-    name: "سارة أحمد",
-    email: "sara.ahmed@fire.gov",
-    role: "Fire",
-    status: "Active",
-    lastLogin: "2024-01-15 08:45"
-  },
-  {
-    id: "3",
-    name: "محمد علي",
-    email: "mohammed.ali@medical.gov",
-    role: "Medical",
-    status: "Active",
-    lastLogin: "2024-01-14 16:20"
-  },
-  {
-    id: "4",
-    name: "فاطمة حسن",
-    email: "fatima.hassan@civil.gov",
-    role: "Civil Defense",
-    status: "Inactive",
-    lastLogin: "2024-01-10 14:15"
-  },
-  {
-    id: "5",
-    name: "خالد يوسف",
-    email: "khalid.youssef@police.gov",
-    role: "Police",
-    status: "Active",
-    lastLogin: "2024-01-15 07:20"
-  }
-];
+type MemStats = {
+  videos: { count: number; sizeMB: number };
+  images: { count: number; sizeMB: number };
+  total: { sizeMB: number; utilizationPercent: number };
+};
+
+type PersistStats = {
+  videos: { count: number; totalSizeMB: number };
+  images: { count: number; totalSizeMB: number };
+  total: { totalSizeMB: number; count: number };
+};
 
 const Settings = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [highRiskThreshold, setHighRiskThreshold] = useState([75]);
   const [responseTimeAlert, setResponseTimeAlert] = useState([10]);
+  const [usersData, setUsersData] = useState<UsersResponse | null>(null);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [emailRecipients, setEmailRecipients] = useState([
     "admin@emergency.gov",
     "supervisor@emergency.gov"
   ]);
   const [newEmail, setNewEmail] = useState("");
-  const [cacheStats, setCacheStats] = useState<any>(null);
-  const [persistentStats, setPersistentStats] = useState<any>(null);
+  const [cacheStats, setCacheStats] = useState<MemStats | null>(null);
+  const [persistentStats, setPersistentStats] = useState<PersistStats | null>(null);
   const [loadingCache, setLoadingCache] = useState(false);
+  const [showAddUser, setShowAddUser] = useState(false);
+  const [addUserLoading, setAddUserLoading] = useState(false);
+  const [addUserError, setAddUserError] = useState<string | null>(null);
+  const [addUserSuccess, setAddUserSuccess] = useState<string | null>(null);
+  const [newUser, setNewUser] = useState({ username: "", full_name: "", password: "" });
+  const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
+  const [editPasswordErrors, setEditPasswordErrors] = useState<string[]>([]);
   const { t } = useLanguage();
+
+  const [editUser, setEditUser] = useState<DashboardUser | null>(null);
+  const [editUserModalOpen, setEditUserModalOpen] = useState(false);
+  const [editUserLoading, setEditUserLoading] = useState(false);
+  const [editUserError, setEditUserError] = useState<string | null>(null);
+  const [editUserSuccess, setEditUserSuccess] = useState<string | null>(null);
+  const [editUserFields, setEditUserFields] = useState({ full_name: "", password: "" });
+  const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
+  const [deleteUserLoading, setDeleteUserLoading] = useState(false);
+  const [deleteUserError, setDeleteUserError] = useState<string | null>(null);
+
+  const loadUsersData = async () => {
+    setIsLoadingUsers(true);
+    try {
+      const data = await fetchUsers();
+      setUsersData(data);
+    } catch (error) {
+      console.error('Error loading users data:', error);
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
 
   const loadCacheStats = async () => {
     setLoadingCache(true);
@@ -98,7 +109,21 @@ const Settings = () => {
       const memStats = mediaCacheService.getStats();
       const dbStats = await persistentMediaCache.getStats();
       setCacheStats(memStats);
-      setPersistentStats(dbStats);
+      // Normalize types: ensure totalSizeMB is a number to match PersistStats
+      setPersistentStats({
+        videos: {
+          count: dbStats.videos.count,
+          totalSizeMB: parseFloat(String(dbStats.videos.totalSizeMB)),
+        },
+        images: {
+          count: dbStats.images.count,
+          totalSizeMB: parseFloat(String(dbStats.images.totalSizeMB)),
+        },
+        total: {
+          count: dbStats.total.count,
+          totalSizeMB: parseFloat(String(dbStats.total.totalSizeMB)),
+        },
+      });
     } catch (error) {
       console.error('Failed to load cache stats:', error);
     } finally {
@@ -108,6 +133,7 @@ const Settings = () => {
 
   useEffect(() => {
     loadCacheStats();
+    loadUsersData();
   }, []);
 
   const handleClearMemoryCache = () => {
@@ -156,6 +182,128 @@ const Settings = () => {
     setEmailRecipients(emailRecipients.filter(e => e !== email));
   };
 
+  const validatePassword = (pw: string): string[] => {
+    const errs: string[] = [];
+    if (pw.length < 8) errs.push(t('settings.passwordReq8Chars'));
+    if (!/[a-z]/.test(pw)) errs.push(t('settings.passwordReqLowercase'));
+    if (!/[A-Z]/.test(pw)) errs.push(t('settings.passwordReqUppercase'));
+    if (!/\d/.test(pw)) errs.push(t('settings.passwordReqNumber'));
+    if (!/[^\w\s]/.test(pw)) errs.push(t('settings.passwordReqSpecial'));
+    return errs;
+  };
+
+  const handleAddUser = async () => {
+    setAddUserLoading(true);
+    setAddUserError(null);
+    setAddUserSuccess(null);
+    try {
+      // Frontend password strength validation
+      const errs = validatePassword(newUser.password || "");
+      setPasswordErrors(errs);
+      if (errs.length > 0) {
+        setAddUserError(t('settings.passwordWeak'));
+        return;
+      }
+
+      const res = await fetch("http://localhost:8000/api/dashboard/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newUser),
+      });
+      const data = await res.json();
+      if (!res.ok || data.status !== "success") {
+        setAddUserError(data.message || t('settings.failedToAddUser'));
+      } else {
+        setAddUserSuccess(t('settings.userCreatedSuccess'));
+        setNewUser({ username: "", full_name: "", password: "" });
+        setPasswordErrors([]);
+        loadUsersData();
+        setShowAddUser(false);
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setAddUserError(msg || t('settings.failedToAddUser'));
+    } finally {
+      setAddUserLoading(false);
+    }
+  };
+
+  const openEditUserModal = (user: DashboardUser) => {
+    setEditUser(user);
+    setEditUserFields({ full_name: user.full_name, password: "" });
+    setEditUserModalOpen(true);
+    setEditUserError(null);
+    setEditUserSuccess(null);
+    setEditPasswordErrors([]);
+  };
+
+  const handleEditUser = async () => {
+    if (!editUser) return;
+    setEditUserLoading(true);
+    setEditUserError(null);
+    setEditUserSuccess(null);
+    try {
+      // Validate password if provided
+      if (editUserFields.password) {
+        const errs = validatePassword(editUserFields.password);
+        setEditPasswordErrors(errs);
+        if (errs.length > 0) {
+          setEditUserError(t('settings.passwordWeak'));
+          setEditUserLoading(false);
+          return;
+        }
+      }
+
+      // Only include non-empty fields in the request
+      const updateData: Record<string, string> = {};
+      if (editUserFields.full_name) updateData.full_name = editUserFields.full_name;
+      if (editUserFields.password) updateData.password = editUserFields.password;
+
+      const res = await fetch(`http://localhost:8000/api/dashboard/users/${editUser.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updateData),
+      });
+      const data = await res.json();
+      if (!res.ok || data.status !== "success") {
+        setEditUserError(data.message || t('settings.failedToUpdateUser'));
+      } else {
+        setEditUserSuccess(t('settings.userUpdatedSuccess'));
+        setEditPasswordErrors([]);
+        setEditUserModalOpen(false);
+        loadUsersData();
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setEditUserError(msg || t('settings.failedToUpdateUser'));
+    } finally {
+      setEditUserLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!deleteUserId) return;
+    setDeleteUserLoading(true);
+    setDeleteUserError(null);
+    try {
+      const res = await fetch(`http://localhost:8000/api/dashboard/users/${deleteUserId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok || data.status !== "success") {
+        setDeleteUserError(data.message || t('settings.failedToDeleteUser'));
+      } else {
+        setDeleteUserId(null);
+        loadUsersData();
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setDeleteUserError(msg || t('settings.failedToDeleteUser'));
+    } finally {
+      setDeleteUserLoading(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen w-full bg-background">
       <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
@@ -199,47 +347,114 @@ const Settings = () => {
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between">
                     <div>
-                      <CardTitle>User Management</CardTitle>
-                      <CardDescription>Manage authority user accounts and permissions</CardDescription>
+                      <CardTitle>{t('settings.userManagementTitle')}</CardTitle>
+                      <CardDescription>
+                        {t('settings.userManagementDescription')}
+                      </CardDescription>
                     </div>
-                    <Button className="flex items-center gap-2">
-                      <Plus className="h-4 w-4" />
-                      Add New User
-                    </Button>
+                    <Dialog open={showAddUser} onOpenChange={(open) => {
+                      setShowAddUser(open);
+                      if (!open) {
+                        // Reset form and errors when closing
+                        setNewUser({ username: "", full_name: "", password: "" });
+                        setPasswordErrors([]);
+                        setAddUserError(null);
+                        setAddUserSuccess(null);
+                      }
+                    }}>
+                      <DialogTrigger asChild>
+                        <Button className="flex items-center gap-2">
+                          <Plus className="h-4 w-4" />
+                          {t('settings.addNewUser')}
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>{t('settings.addNewUser')}</DialogTitle>
+                          <DialogDescription>{t('settings.userManagementDescription')}</DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <Label>{t('settings.username')}</Label>
+                            <Input value={newUser.username} onChange={e => setNewUser(u => ({ ...u, username: e.target.value }))} />
+                          </div>
+                          <div>
+                            <Label>{t('settings.fullName')}</Label>
+                            <Input value={newUser.full_name} onChange={e => setNewUser(u => ({ ...u, full_name: e.target.value }))} />
+                          </div>
+                          <div>
+                            <Label>{t('settings.password')}</Label>
+                            <Input
+                              type="password"
+                              value={newUser.password}
+                              onChange={e => {
+                                const val = e.target.value;
+                                setNewUser(u => ({ ...u, password: val }));
+                                // live validation with localized messages
+                                setPasswordErrors(validatePassword(val));
+                              }}
+                            />
+                            {passwordErrors.length > 0 && (
+                              <ul className="mt-2 text-xs text-red-500 list-disc pl-5 space-y-1">
+                                {passwordErrors.map((e, i) => (
+                                  <li key={i}>{e}</li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                          {addUserError && <div className="text-red-500 text-sm">{addUserError}</div>}
+                          {addUserSuccess && <div className="text-green-600 text-sm">{addUserSuccess}</div>}
+                        </div>
+                        <DialogFooter>
+                          <Button onClick={handleAddUser} disabled={addUserLoading || passwordErrors.length > 0}>
+                            {addUserLoading ? t('settings.updating') : t('settings.addNewUser')}
+                          </Button>
+                          <DialogClose asChild>
+                            <Button variant="outline">{t('settings.cancel')}</Button>
+                          </DialogClose>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </CardHeader>
                   <CardContent>
+                    <div className="mb-6">
+                      <p className="text-sm text-gray-600 dark:text-gray-300">
+                        {t('settings.totalDashboardUsers', { count: String(usersData?.total_dashboard_users ?? 0) })}
+                      </p>
+                    </div>
+                    
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Role</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Last Login</TableHead>
-                          <TableHead>Actions</TableHead>
+                          <TableHead>{t('settings.fullName')}</TableHead>
+                          <TableHead>{t('settings.username')}</TableHead>
+                          <TableHead>{t('settings.status')}</TableHead>
+                          <TableHead>{t('settings.lastLogin')}</TableHead>
+                          <TableHead>{t('settings.actions')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {mockUsers.map((user) => (
+                        {isLoadingUsers ? (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center py-4">
+                              Loading users...
+                            </TableCell>
+                          </TableRow>
+                        ) : usersData?.dashboard_users.map((user) => (
                           <TableRow key={user.id}>
-                            <TableCell className="font-medium">{user.name}</TableCell>
-                            <TableCell>{user.email}</TableCell>
+                            <TableCell className="font-medium">{user.full_name}</TableCell>
+                            <TableCell>{user.username}</TableCell>
                             <TableCell>
-                              <Badge variant={getRoleBadgeVariant(user.role)}>
-                                {user.role}
+                              <Badge variant={user.is_active ? "success" : "outline"}>
+                                {user.is_active ? "Active" : "Inactive"}
                               </Badge>
                             </TableCell>
-                            <TableCell>
-                              <Badge variant={getStatusBadgeVariant(user.status)}>
-                                {user.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>{user.lastLogin}</TableCell>
+                            <TableCell>{user.last_login || "Never"}</TableCell>
                             <TableCell className="space-x-2">
-                              <Button variant="outline" size="sm">
+                              <Button variant="outline" size="sm" onClick={() => openEditUserModal(user)}>
                                 <Edit className="h-3 w-3" />
                               </Button>
-                              <Button variant="outline" size="sm">
+                              <Button variant="outline" size="sm" onClick={() => setDeleteUserId(user.id)}>
                                 <Trash2 className="h-3 w-3 text-red-500" />
                               </Button>
                             </TableCell>
@@ -249,6 +464,89 @@ const Settings = () => {
                     </Table>
                   </CardContent>
                 </Card>
+                {/* Edit User Dialog */}
+                <Dialog open={editUserModalOpen} onOpenChange={(open) => {
+                  setEditUserModalOpen(open);
+                  if (!open) {
+                    // Reset errors when closing
+                    setEditPasswordErrors([]);
+                    setEditUserError(null);
+                    setEditUserSuccess(null);
+                  }
+                }}>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>{t('settings.editUser')}</DialogTitle>
+                      <DialogDescription>{t('settings.editUserDescription')}</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label>{t('settings.fullName')}</Label>
+                        <Input 
+                          value={editUserFields.full_name} 
+                          onChange={e => setEditUserFields(f => ({ ...f, full_name: e.target.value }))} 
+                        />
+                      </div>
+                      <div>
+                        <Label>{t('settings.newPassword')}</Label>
+                        <Input 
+                          type="password" 
+                          value={editUserFields.password} 
+                          onChange={e => {
+                            const val = e.target.value;
+                            setEditUserFields(f => ({ ...f, password: val }));
+                            // live validation for edit password
+                            if (val) {
+                              setEditPasswordErrors(validatePassword(val));
+                            } else {
+                              setEditPasswordErrors([]);
+                            }
+                          }} 
+                        />
+                        {editPasswordErrors.length > 0 && (
+                          <ul className="mt-2 text-xs text-red-500 list-disc pl-5 space-y-1">
+                            {editPasswordErrors.map((e, i) => (
+                              <li key={i}>{e}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                      {editUserError && <div className="text-red-500 text-sm">{editUserError}</div>}
+                      {editUserSuccess && <div className="text-green-600 text-sm">{editUserSuccess}</div>}
+                    </div>
+                    <DialogFooter>
+                      <Button onClick={handleEditUser} disabled={editUserLoading || (editUserFields.password !== "" && editPasswordErrors.length > 0)}>
+                        {editUserLoading ? t('settings.updating') : t('settings.updateUser')}
+                      </Button>
+                      <DialogClose asChild>
+                        <Button variant="outline">{t('settings.cancel')}</Button>
+                      </DialogClose>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+
+                {/* Delete User Dialog */}
+                <Dialog open={deleteUserId !== null} onOpenChange={(open) => !open && setDeleteUserId(null)}>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>{t('settings.deleteUser')}</DialogTitle>
+                      <DialogDescription>{t('settings.deleteUserDescription')}</DialogDescription>
+                    </DialogHeader>
+                    {deleteUserError && <div className="text-red-500 text-sm">{deleteUserError}</div>}
+                    <DialogFooter>
+                      <Button 
+                        variant="danger" 
+                        onClick={handleDeleteUser} 
+                        disabled={deleteUserLoading}
+                      >
+                        {deleteUserLoading ? t('settings.deleting') : t('settings.deleteUser')}
+                      </Button>
+                      <DialogClose asChild>
+                        <Button variant="outline">Cancel</Button>
+                      </DialogClose>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </TabsContent>
 
               {/* Alert Settings Tab */}
@@ -585,7 +883,7 @@ const Settings = () => {
                     <Separator />
 
                     <div className="space-y-3">
-                      <Button variant="destructive" onClick={handleClearAllCache} disabled={loadingCache}>
+                      <Button variant="danger" onClick={handleClearAllCache} disabled={loadingCache}>
                         Clear All Caches
                       </Button>
                       <p className="text-xs text-muted-foreground">

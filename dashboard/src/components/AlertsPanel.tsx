@@ -66,7 +66,7 @@ const AlertsPanel = () => {
   const [filter, setFilter] = useState<string>("all");
   const [selectedAlert, setSelectedAlert] = useState<string | null>(null);
 
-  const getSeverityColor = (severity: string) => {
+  const getSeverityColor = (severity: string): "default" | "secondary" | "outline" | "success" | "warning" | "danger" => {
     switch (severity) {
       case "high": return "danger";
       case "medium": return "warning";
@@ -174,7 +174,7 @@ const AlertsPanel = () => {
                         <h4 className="font-medium text-card-foreground">
                           {alert.title}
                         </h4>
-                        <Badge variant={getSeverityColor(alert.severity) as any}>
+                        <Badge variant={getSeverityColor(alert.severity)}>
                           {getSeverityLabel(alert.severity)}
                         </Badge>
                       </div>

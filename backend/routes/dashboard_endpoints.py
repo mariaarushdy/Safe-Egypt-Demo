@@ -1,7 +1,14 @@
+from pydantic import BaseModel, Field, validator
 from fastapi import APIRouter, HTTPException, Response, Request
 from fastapi.responses import FileResponse
-from services.dashboard import get_incidents_summary_service, get_incident_by_id_service, update_incident_status_service
-from pydantic import BaseModel, validator
+from services.dashboard import (
+    get_incidents_summary_service, 
+    get_incident_by_id_service, 
+    update_incident_status_service,
+    manage_users_service
+)
+from typing import Optional
+import re
 import os
 import hashlib
 
@@ -9,6 +16,10 @@ import hashlib
 dashboard_router = APIRouter()
 
 # Request models
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
 class VideoRequest(BaseModel):
     file_path: str
 
@@ -23,6 +34,38 @@ class StatusUpdateRequest(BaseModel):
         if v.lower() not in ['accepted', 'rejected']:
             raise ValueError('Status must be either "accepted" or "rejected"')
         return v.lower()
+
+# Edit user request model
+class EditUserRequest(BaseModel):
+    full_name: Optional[str] = Field(None, min_length=3, max_length=100)
+    password: Optional[str] = Field(None, min_length=8, max_length=128)
+
+# Login endpoint
+@dashboard_router.post("/login")
+async def login_dashboard_user(request: LoginRequest):
+    from services.auth import authenticate_dashboard_user
+    result = await authenticate_dashboard_user(request.username, request.password)
+    if result["status"] == "error":
+        raise HTTPException(status_code=401, detail=result["message"])
+    return result
+
+# Edit user endpoint
+@dashboard_router.put("/users/{user_id}")
+async def edit_dashboard_user(user_id: int, request: EditUserRequest):
+    from services.dashboard import edit_dashboard_user_service
+    result = edit_dashboard_user_service(user_id, request.full_name, request.password)
+    if result["status"] == "error":
+        raise HTTPException(status_code=400, detail=result["message"])
+    return result
+
+# Delete user endpoint
+@dashboard_router.delete("/users/{user_id}")
+async def delete_dashboard_user(user_id: int):
+    from services.dashboard import delete_dashboard_user_service
+    result = delete_dashboard_user_service(user_id)
+    if result["status"] == "error":
+        raise HTTPException(status_code=400, detail=result["message"])
+    return result
 
 def get_file_etag(file_path: str) -> str:
     """Generate ETag for caching"""
@@ -40,6 +83,7 @@ async def dashboard_root():
         "status": "Active",
         "available_endpoints": [
             "GET /api/dashboard/ - This endpoint",
+            "GET /api/dashboard/users - Get users summary",
             "GET /api/dashboard/incidents - Get incidents summary",
             "GET /api/dashboard/incident/{incident_id} - Get detailed incident information",
             "POST /api/dashboard/incident/{incident_id}/video - Serve video file (body: {file_path})",
@@ -47,6 +91,14 @@ async def dashboard_root():
             "POST /api/dashboard/incident/{incident_id}/status - Update incident status (body: {status})"
         ]
     }
+
+@dashboard_router.get("/users")
+async def get_users():
+    """Get summary of system users"""
+    users_data = manage_users_service()
+    if users_data["status"] == "error":
+        raise HTTPException(status_code=500, detail=users_data["message"])
+    return users_data
 
 @dashboard_router.get("/incidents")
 async def get_incidents_summary():
@@ -60,6 +112,27 @@ async def get_incidents_summary():
     """
     return get_incidents_summary_service()
 
+# Request model for creating a user
+class CreateUserRequest(BaseModel):
+    username: str = Field(..., min_length=3, max_length=32)
+    full_name: str = Field(..., min_length=3, max_length=100)
+    password: str = Field(..., min_length=8, max_length=128)
+# Add user creation endpoint
+@dashboard_router.post("/users")
+async def create_dashboard_user(request: CreateUserRequest):
+    """Create a new dashboard user (admin only)."""
+    # Enforce strong password: 8-128 chars, at least one lowercase, uppercase, digit, special
+    pattern = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,128}$")
+    if not pattern.match(request.password):
+        raise HTTPException(status_code=400, detail=(
+            "Password is too weak. It must be at least 8 characters and include at least one uppercase letter, "
+            "one lowercase letter, one number, and one special character."
+        ))
+    from services.dashboard import create_dashboard_user_service
+    result = create_dashboard_user_service(request.username, request.full_name, request.password)
+    if result["status"] == "error":
+        raise HTTPException(status_code=400, detail=result["message"])
+    return result
 
 @dashboard_router.get("/incident/{incident_id}")
 async def get_incident_by_id(incident_id: str):

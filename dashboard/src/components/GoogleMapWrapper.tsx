@@ -22,7 +22,8 @@ interface GoogleMapWrapperProps {
   className?: string;
 }
 
-const GOOGLE_MAPS_API_KEY = 'AIzaSyBI5Iulwx26h0tvrOlVUcK0BVG2akh0lhw';
+// Read Google Maps API key from Vite environment variables
+const GOOGLE_MAPS_API_KEY = (import.meta as any).env?.VITE_GOOGLE_MAPS_API_KEY || "";
 
 // Map component that will be rendered inside the wrapper
 const MapComponent: React.FC<{
@@ -244,9 +245,9 @@ const MapComponent: React.FC<{
 
   // Make incident click handler available globally
   useEffect(() => {
-    (window as any).handleIncidentClick = onIncidentClick;
+    (window as Window & typeof globalThis & { handleIncidentClick?: (id: string) => void }).handleIncidentClick = onIncidentClick;
     return () => {
-      delete (window as any).handleIncidentClick;
+      delete (window as Window & typeof globalThis & { handleIncidentClick?: (id: string) => void }).handleIncidentClick;
     };
   }, [onIncidentClick]);
 

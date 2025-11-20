@@ -123,13 +123,72 @@ def manage_users_service() -> Dict[str, Any]:
     Returns:
         Dict containing user data
     """
-    # TODO: Implement user management
-    return {
-        "status": "not_implemented",
-        "message": "User management service to be implemented",
-        "total_users": 0,
-        "active_users": 0
-    }
+    from models.db_helper import get_db_connection
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # Dashboard users
+        cur.execute("SELECT COUNT(*) FROM dashboard_users;")
+        total_dashboard = cur.fetchone()[0] or 0
+
+        cur.execute("SELECT COUNT(*) FROM dashboard_users WHERE is_active = TRUE;")
+        active_dashboard = cur.fetchone()[0] or 0
+
+        # App users (mobile profiles)
+        cur.execute("SELECT COUNT(*) FROM app_users;")
+        total_app = cur.fetchone()[0] or 0
+
+        # Registered app users (have national_id) vs anonymous
+        cur.execute("SELECT COUNT(*) FROM app_users WHERE national_id IS NOT NULL;")
+        registered_app = cur.fetchone()[0] or 0
+
+        anonymous_app = total_app - registered_app
+
+        # Combined totals
+        combined_total = total_dashboard + total_app
+
+        # Get dashboard users list
+        cur.execute("""
+            SELECT id, username, full_name, is_active, last_login, created_at
+            FROM dashboard_users
+            ORDER BY created_at DESC;
+        """)
+        dashboard_users = [
+            {
+                "id": row[0],
+                "username": row[1],
+                "full_name": row[2],
+                "is_active": row[3],
+                "last_login": row[4].isoformat() if row[4] else None,
+                "created_at": row[5].isoformat() if row[5] else None
+            }
+            for row in cur.fetchall()
+        ]
+
+        cur.close()
+        conn.close()
+
+        return {
+            "status": "success",
+            "message": "User management summary retrieved",
+            "total_dashboard_users": total_dashboard,
+            "active_dashboard_users": active_dashboard,
+            "total_app_users": total_app,
+            "registered_app_users": registered_app,
+            "anonymous_app_users": anonymous_app,
+            "total_users": combined_total,
+            "dashboard_users": dashboard_users
+        }
+    except Exception as e:
+        logger.error(f"Error in manage_users_service: {str(e)}", exc_info=True)
+        return {
+            "status": "error",
+            "message": f"Failed to retrieve user summary: {str(e)}",
+            "total_users": 0,
+            "active_users": 0
+        }
 
 def get_system_status_service() -> Dict[str, Any]:
     """
@@ -139,6 +198,124 @@ def get_system_status_service() -> Dict[str, Any]:
         Dict containing system status
     """
     # TODO: Implement system monitoring
+    
+def edit_dashboard_user_service(user_id: int, full_name: Optional[str], password: Optional[str]) -> Dict[str, Any]:
+    """
+    Edit a dashboard user's details
+    
+    Args:
+        user_id: ID of the user to edit
+        full_name: New full name (optional)
+        password: New password (optional)
+        
+    Returns:
+        Dict containing operation status
+    """
+    from models.db_helper import get_db_connection
+    import bcrypt
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # Check if user exists
+        cur.execute("SELECT id FROM dashboard_users WHERE id = %s;", (user_id,))
+        if not cur.fetchone():
+            cur.close()
+            conn.close()
+            return {
+                "status": "error",
+                "message": "User not found"
+            }
+
+        # Build update query dynamically based on provided fields
+        update_parts = []
+        params = []
+        
+        if full_name is not None:
+            update_parts.append("full_name = %s")
+            params.append(full_name)
+            
+        if password is not None:
+            update_parts.append("password_hash = %s")
+            # Hash the new password
+            salt = bcrypt.gensalt()
+            hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+            params.append(hashed.decode('utf-8'))
+
+        if not update_parts:
+            cur.close()
+            conn.close()
+            return {
+                "status": "error",
+                "message": "No fields to update"
+            }
+
+        # Construct and execute update query
+        query = f"UPDATE dashboard_users SET {', '.join(update_parts)} WHERE id = %s"
+        params.append(user_id)
+        cur.execute(query, params)
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return {
+            "status": "success",
+            "message": "User updated successfully"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in edit_dashboard_user_service: {str(e)}", exc_info=True)
+        return {
+            "status": "error",
+            "message": f"Failed to update user: {str(e)}"
+        }
+
+def delete_dashboard_user_service(user_id: int) -> Dict[str, Any]:
+    """
+    Delete a dashboard user
+    
+    Args:
+        user_id: ID of the user to delete
+        
+    Returns:
+        Dict containing operation status
+    """
+    from models.db_helper import get_db_connection
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # Check if user exists
+        cur.execute("SELECT id FROM dashboard_users WHERE id = %s;", (user_id,))
+        if not cur.fetchone():
+            cur.close()
+            conn.close()
+            return {
+                "status": "error",
+                "message": "User not found"
+            }
+
+        # Delete the user
+        cur.execute("DELETE FROM dashboard_users WHERE id = %s;", (user_id,))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return {
+            "status": "success",
+            "message": "User deleted successfully"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in delete_dashboard_user_service: {str(e)}", exc_info=True)
+        return {
+            "status": "error",
+            "message": f"Failed to delete user: {str(e)}"
+        }
     return {
         "status": "not_implemented",
         "message": "System monitoring service to be implemented",
@@ -314,3 +491,41 @@ def update_incident_status_service(incident_id: str, status: str) -> Dict[str, A
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating incident status: {str(e)}")
+
+# --- User creation service ---
+def create_dashboard_user_service(username: str, full_name: str, password: str) -> dict:
+    """
+    Create a new dashboard user in the database.
+    Returns a dict with status and message.
+    """
+    from models.db_helper import get_db_connection
+    import bcrypt
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        # Check if username already exists
+        cur.execute("SELECT id FROM dashboard_users WHERE username = %s;", (username,))
+        if cur.fetchone():
+            cur.close()
+            conn.close()
+            return {"status": "error", "message": "Username already exists."}
+
+        # Hash the password using bcrypt
+        salt = bcrypt.gensalt()
+        password_hash = bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
+        cur.execute(
+            """
+            INSERT INTO dashboard_users (username, full_name, password_hash, is_active, created_at)
+            VALUES (%s, %s, %s, TRUE, NOW())
+            RETURNING id;
+            """,
+            (username, full_name, password_hash)
+        )
+        user_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"status": "success", "message": "User created successfully.", "user_id": user_id}
+    except Exception as e:
+        logger.error(f"Error creating dashboard user: {str(e)}", exc_info=True)
+        return {"status": "error", "message": f"Failed to create user: {str(e)}"}

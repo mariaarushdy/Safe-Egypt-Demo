@@ -262,12 +262,12 @@ const Analytics = () => {
   
   console.log('Status distribution result:', statusDistribution);
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ color: string; dataKey: string; value: number }>; label?: string }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
           <p className="text-card-foreground font-medium">{`${label}`}</p>
-          {payload.map((entry: any, index: number) => (
+          {payload.map((entry, index: number) => (
             <p key={index} style={{ color: entry.color }} className="text-sm">
               {`${entry.dataKey}: ${entry.value}`}
             </p>
@@ -278,7 +278,7 @@ const Analytics = () => {
     return null;
   };
 
-  const PieTooltip = ({ active, payload }: any) => {
+  const PieTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ name: string; value: number }> }) => {
     if (active && payload && payload.length) {
       const data = payload[0];
       return (

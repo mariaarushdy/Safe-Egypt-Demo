@@ -50,6 +50,27 @@ export interface DashboardStats {
   pendingActions: number;
 }
 
+export interface DashboardUser {
+  id: number;
+  username: string;
+  full_name: string;
+  is_active: boolean;
+  last_login: string | null;
+  created_at: string;
+}
+
+export interface UsersResponse {
+  status: string;
+  message: string;
+  total_dashboard_users: number;
+  active_dashboard_users: number;
+  total_app_users: number;
+  registered_app_users: number;
+  anonymous_app_users: number;
+  total_users: number;
+  dashboard_users: DashboardUser[];
+}
+
 export interface DetectedEvent {
   event_type: string;
   first_second: number;
@@ -95,6 +116,26 @@ export interface IncidentDetailResponse {
 }
 
 // Fetch incidents from the API
+export const fetchUsers = async (): Promise<UsersResponse> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/dashboard/users`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    throw error;
+  }
+};
+
 export const fetchIncidents = async (): Promise<IncidentsResponse> => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/dashboard/incidents`, {
@@ -277,7 +318,7 @@ export const fetchIncidentImage = async (incidentId: string, imagePath: string):
 };
 
 // Update incident status (accept/reject)
-export const updateIncidentStatus = async (incidentId: string, status: 'accepted' | 'rejected'): Promise<any> => {
+export const updateIncidentStatus = async (incidentId: string, status: 'accepted' | 'rejected'): Promise<{ status: string; message: string; incident?: unknown }> => {
   try {
     console.log('Updating incident status:', incidentId, 'to', status);
     

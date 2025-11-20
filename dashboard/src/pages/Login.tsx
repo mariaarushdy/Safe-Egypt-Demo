@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Shield, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -14,8 +13,7 @@ import loginBg from "@/assets/login-bg.jpg";
 const Login = () => {
   const [credentials, setCredentials] = useState({
     username: "",
-    password: "",
-    authority: "police"
+    password: ""
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -27,38 +25,49 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate authentication
-    setTimeout(() => {
-      const allowedAuthorities = ["police", "ambulance", "civil-defense"] as const;
-      const isValidAuthority = allowedAuthorities.includes(credentials.authority as any);
-      const isValid =
-        credentials.username.trim().toLowerCase() === "maria" &&
-        credentials.password === "1234" &&
-        isValidAuthority;
+    try {
+      const res = await fetch('http://localhost:8000/api/dashboard/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: credentials.username,
+          password: credentials.password,
+        }),
+      });
 
-      if (isValid) {
-        const authorityName = 
-          credentials.authority === "police" ? t('login.police') :
-          credentials.authority === "ambulance" ? t('login.medical') :
-          t('login.civilDefense');
-          
+      const data = await res.json();
+
+      if (res.ok) {
+        // Save token and user info to localStorage
+        localStorage.setItem('token', data.access_token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+
         toast({
           title: t('login.successTitle'),
           description: t('login.successMessage', { 
-            username: credentials.username, 
-            authority: authorityName 
+            username: data.user.full_name || credentials.username
           }),
         });
+        
         navigate("/dashboard");
       } else {
         toast({
           variant: "destructive",
           title: t('login.errorTitle'),
-          description: t('login.errorMessage'),
+          description: data.detail || t('login.errorMessage'),
         });
       }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: t('login.errorTitle'),
+        description: t('login.networkError'),
+      });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -88,24 +97,6 @@ const Login = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="authority" className="text-card-foreground">
-                  {t('login.authority')}
-                </Label>
-                <Select value={credentials.authority} onValueChange={(value) => 
-                  setCredentials(prev => ({ ...prev, authority: value }))
-                }>
-                  <SelectTrigger className="bg-input border-border">
-                    <SelectValue placeholder={t('login.selectAuthority')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="police">{t('login.police')}</SelectItem>
-                    <SelectItem value="ambulance">{t('login.medical')}</SelectItem>
-                    <SelectItem value="civil-defense">{t('login.civilDefense')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
               <div className="space-y-2">
                 <Label htmlFor="username" className="text-card-foreground">
                   {t('login.username')}
