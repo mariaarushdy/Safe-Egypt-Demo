@@ -3,6 +3,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:safe_egypt_v2/pages/report_incident_screen.dart';
 import 'package:safe_egypt_v2/pages/notifications_alerts_page.dart';
+import 'package:safe_egypt_v2/pages/registration.dart';
 import 'package:safe_egypt_v2/services/location_service.dart';
 import 'package:safe_egypt_v2/services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -566,10 +567,20 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             const SizedBox(width: 16),
-            const Icon(
-              Icons.person,
-              color: Colors.white,
-              size: 24,
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const RegistrationPage(),
+                  ),
+                );
+              },
+              child: const Icon(
+                Icons.person,
+                color: Colors.white,
+                size: 24,
+              ),
             ),
           ],
         ),

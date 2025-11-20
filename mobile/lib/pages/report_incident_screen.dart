@@ -4,6 +4,7 @@ import 'package:safe_egypt_v2/components/incident_report.dart';
 import 'package:safe_egypt_v2/services/api_service.dart';
 import 'package:safe_egypt_v2/services/location_service.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:safe_egypt_v2/pages/registration.dart';
 
 class ReportIncidentScreen extends StatefulWidget {
   const ReportIncidentScreen({super.key});
@@ -15,7 +16,7 @@ class ReportIncidentScreen extends StatefulWidget {
 class _ReportIncidentScreenState extends State<ReportIncidentScreen> {
   final IncidentReport _report = IncidentReport();
   final TextEditingController _descriptionController = TextEditingController();
-  bool _isAnonymous = false;
+  bool _isAnonymous = true;
   bool _isSubmitting = false;
 
   @override
@@ -189,16 +190,93 @@ class _ReportIncidentScreenState extends State<ReportIncidentScreen> {
               // Anonymous reporting toggle
               Row(
                 children: [
-                  Switch(
-                    value: _isAnonymous,
-                    onChanged: (value) {
-                      setState(() {
-                        _isAnonymous = value;
-                        _report.isAnonymous = value;
-                      });
-                    },
-                    activeThumbColor: Theme.of(context).primaryColor,
-                  ),
+                 Switch(
+                  value: _isAnonymous,
+                  onChanged: (value) async {
+                    if (value == false) {
+                      // User is turning off anonymous mode
+                      // Check if they have registered account info
+                      final deviceId = await getDeviceId();
+                      final checkResult = await ApiService.checkUserRegistration(deviceId);
+                      
+                      if (checkResult['success']) {
+                        if (!checkResult['is_registered']) {
+                          // User has no account info, show dialog to ask what they want to do
+                          // ignore: use_build_context_synchronously
+                          final userChoice = await showDialog<String>(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                title: Text('registration.required_title'.tr()),
+                                content: Text('registration.required_message'.tr()),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.of(context).pop('anonymous');
+                                    },
+                                    child: Text('registration.continue_anonymous'.tr()),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      Navigator.of(context).pop('register');
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF1E3FA3),
+                                      foregroundColor: Colors.white,
+                                    ),
+                                    child: Text('registration.go_to_register'.tr()),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                          
+                          if (userChoice == 'register') {
+                            // Navigate to registration page
+                            // ignore: use_build_context_synchronously
+                            final registrationResult = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const RegistrationPage(),
+                              ),
+                            );
+                            
+                            // If registration was successful, turn off anonymous mode
+                            if (registrationResult == true) {
+                              setState(() {
+                                _isAnonymous = false;
+                                _report.isAnonymous = false;
+                              });
+                            }
+                            // If user cancelled registration, keep anonymous mode on
+                            return;
+                          } else {
+                            // User chose to continue as anonymous, keep the switch ON
+                            return;
+                          }
+                        }
+                      } else {
+                        // API error, show message
+                        // ignore: use_build_context_synchronously
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(checkResult['message'] ?? 'Error checking user registration'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return; // Don't change the switch state
+                      }
+                    }
+                    
+                    // If all checks pass or turning anonymous ON, update the state
+                    setState(() {
+                      _isAnonymous = value;
+                      _report.isAnonymous = value;
+                    });
+                  },
+                  activeThumbColor: Theme.of(context).primaryColor,
+                ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text('report.report_anonymously'.tr()),

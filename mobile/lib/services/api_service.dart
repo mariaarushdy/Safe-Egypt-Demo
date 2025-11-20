@@ -14,8 +14,20 @@ import 'package:device_info_plus/device_info_plus.dart';
 
 Future<String> getDeviceId() async {
   final deviceInfo = DeviceInfoPlugin();
-  final androidInfo = await deviceInfo.androidInfo;
-  return androidInfo.id;
+  try {
+    if (Platform.isAndroid) {
+      final androidInfo = await deviceInfo.androidInfo;
+      // Use androidId which is unique per device+app combination
+      // This is the correct unique identifier for Android devices
+      return androidInfo.id;
+    } else if (Platform.isIOS) {
+      final iosInfo = await deviceInfo.iosInfo;
+      return iosInfo.identifierForVendor ?? 'unknown-ios-device';
+    }
+  } catch (e) {
+    print('Error getting device ID: $e');
+  }
+  return 'unknown-device-${DateTime.now().millisecondsSinceEpoch}';
 }
 class ApiService {
   // Prevent multiple simultaneous uploads
@@ -40,6 +52,100 @@ class ApiService {
   
   /// Upload media files with location data to the API (Step 6-7 from pseudocode)
   /// Using the working logic from simple_api_test.dart
+  /// 
+  /// Check if user with device_id has registered account information
+static Future<Map<String, dynamic>> checkUserRegistration(String deviceId) async {
+  try {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/mobile/check-user/$deviceId'),
+      headers: {'Content-Type': 'application/json'},
+    ).timeout(
+      const Duration(seconds: 10),
+      onTimeout: () {
+        throw Exception('Request timeout - server may be unreachable');
+      },
+    );
+    
+    if (response.statusCode == 200) {
+      final responseData = json.decode(response.body);
+      
+      return {
+        'success': responseData['success'] ?? true,
+        'user_exists': responseData['user_exists'] ?? false,
+        'is_registered': responseData['is_registered'] ?? false,
+        'user_data': responseData['user_data'],
+      };
+    } else {
+      return {
+        'success': false,
+        'message': 'Failed to check user registration. Status: ${response.statusCode}',
+        'error': 'HTTP ${response.statusCode}: ${response.body}',
+        'user_exists': false,
+        'is_registered': false,
+        'user_data': null,
+      };
+    }
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'Error checking user registration: $e',
+      'error': e.toString(),
+      'user_exists': false,
+      'is_registered': false,
+      'user_data': null,
+    };
+  }
+}
+
+/// Register a new user with device_id
+static Future<Map<String, dynamic>> registerUser({
+  required String deviceId,
+  required String nationalId,
+  required String fullName,
+  required String contactInfo,
+}) async {
+  try {
+    var request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/api/mobile/register-user'),
+    );
+
+    request.fields['device_id'] = deviceId;
+    request.fields['national_id'] = nationalId;
+    request.fields['full_name'] = fullName;
+    request.fields['contact_info'] = contactInfo;
+
+    var response = await request.send().timeout(
+      const Duration(seconds: 10),
+      onTimeout: () {
+        throw Exception('Registration timeout');
+      },
+    );
+    
+    final responseBody = await response.stream.bytesToString();
+    
+    if (response.statusCode == 200) {
+      final responseData = json.decode(responseBody);
+      return {
+        'success': responseData['success'] ?? true,
+        'message': responseData['message'] ?? 'User registered successfully',
+        'user_id': responseData['user_id'],
+      };
+    } else {
+      return {
+        'success': false,
+        'message': 'Failed to register user. Status: ${response.statusCode}',
+        'error': 'HTTP ${response.statusCode}: $responseBody',
+      };
+    }
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'Error registering user: $e',
+      'error': e.toString(),
+    };
+  }
+}
   static Future<IncidentUploadResponse> uploadIncident({
     required IncidentData incidentData,
   }) async {

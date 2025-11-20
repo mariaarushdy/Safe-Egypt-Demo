@@ -8,18 +8,26 @@ import json
 import logging
 
 
-
 from services.mobile import (
     upload_incident_service,
     get_formatted_incidents_from_db_service,
     get_location_name_service,
     health_check_service,
     register_user_service,
-    IncidentUploadResponse
+    IncidentUploadResponse,
+    check_user_registration_service
 )
 
 # Create router for mobile endpoints
 mobile_router = APIRouter()
+@mobile_router.get("/api/mobile/check-user/{device_id}")
+async def check_user_registration(device_id: str):
+    """
+    Check if a user with the given device_id has registered account information.
+    Returns user registration status and data if registered.
+    """
+    return await check_user_registration_service(device_id)
+
 
 def process_ai_analysis_background(incident_id: str, file_path: str, address: str, timestamp: str, latitude: float, longitude: float, all_files: list, device_id: str, app_user_id: int = None):
     """Process AI analysis in the background and save results to database"""

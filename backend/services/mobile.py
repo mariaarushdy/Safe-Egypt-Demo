@@ -131,6 +131,57 @@ MAX_FILE_SIZE = 50 * 1024 * 1024
 #         print(f"❌ Error loading configuration: {e}")
 #         config_data = {}
 
+async def check_user_registration_service(device_id: str):
+    """Service function to check if user with device_id has registered account info"""
+    conn = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Check if device exists and has registration info
+        cur.execute("""
+            SELECT id, national_id, full_name, contact_info 
+            FROM app_users 
+            WHERE device_id = %s;
+        """, (device_id,))
+        
+        result = cur.fetchone()
+        cur.close()
+        conn.close()
+        
+        if result:
+            user_id, national_id, full_name, contact_info = result
+            is_registered = national_id is not None and full_name is not None
+            
+            return {
+                "success": True,
+                "device_id": device_id,
+                "user_exists": True,
+                "is_registered": is_registered,
+                "user_data": {
+                    "user_id": user_id,
+                    "national_id": national_id,
+                    "full_name": full_name,
+                    "contact_info": contact_info
+                } if is_registered else None
+            }
+        else:
+            # Device not found in database
+            return {
+                "success": True,
+                "device_id": device_id,
+                "user_exists": False,
+                "is_registered": False,
+                "user_data": None
+            }
+            
+    except Exception as e:
+        if conn:
+            conn.close()
+        logger.error(f"Error checking user registration: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error checking user registration: {str(e)}")
+
+        
 def get_location_from_regions(latitude: float, longitude: float) -> str:
     """Get location name from predefined regions in config"""
     regions = config_data.get("location_regions", [])

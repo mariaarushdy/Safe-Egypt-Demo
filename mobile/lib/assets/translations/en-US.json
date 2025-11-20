@@ -127,5 +127,43 @@
     "incident_reported": "Incident Reported Successfully",
     "incident_id": "Incident ID",
     "media_files_uploaded": "Media files uploaded"
+  },
+  
+  "registration": {
+    "title": "Create User Account",
+    "subtitle": "Register a new user for Safe Egypt",
+    "full_name": "Full Name",
+    "full_name_hint": "Enter your full name",
+    "email": "Email Address",
+    "email_hint": "Enter your email address",
+    "phone": "Phone Number",
+    "phone_hint": "Enter your phone number",
+    "national_id": "National ID",
+    "national_id_hint": "Enter your 14-digit Egyptian National ID",
+    "password": "Password",
+    "password_hint": "Enter a secure password",
+    "confirm_password": "Confirm Password",
+    "confirm_password_hint": "Re-enter your password",
+    "register_button": "Create Account",
+    "already_have_account": "Already have an account?",
+    "login": "Login",
+    "name_required": "Full name is required",
+    "name_too_short": "Name must be at least 3 characters",
+    "email_required": "Email address is required",
+    "email_invalid": "Please enter a valid email address",
+    "phone_required": "Phone number is required",
+    "phone_invalid": "Please enter a valid phone number",
+    "national_id_required": "National ID is required",
+    "national_id_invalid": "Please enter a valid 14-digit Egyptian National ID",
+    "password_required": "Password is required",
+    "password_too_short": "Password must be at least 8 characters",
+    "confirm_password_required": "Please confirm your password",
+    "passwords_dont_match": "Passwords do not match",
+    "success": "Account created successfully!",
+    "required_title": "Registration Required",
+    "required_message": "To report without anonymity, you need to register your account information. Would you like to register now or continue anonymously?",
+    "continue_anonymous": "Continue Anonymous",
+    "go_to_register": "Register Now"
+    
   }
 }
