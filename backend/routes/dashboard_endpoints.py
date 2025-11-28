@@ -19,6 +19,7 @@ dashboard_router = APIRouter()
 class LoginRequest(BaseModel):
     username: str
     password: str
+    company_code: str  # Required for multi-tenant isolation
 
 class VideoRequest(BaseModel):
     file_path: str
@@ -40,11 +41,19 @@ class EditUserRequest(BaseModel):
     full_name: Optional[str] = Field(None, min_length=3, max_length=100)
     password: Optional[str] = Field(None, min_length=8, max_length=128)
 
-# Login endpoint
+# Login endpoint - HSE team with company code
 @dashboard_router.post("/login")
-async def login_dashboard_user(request: LoginRequest):
-    from services.auth import authenticate_dashboard_user
-    result = await authenticate_dashboard_user(request.username, request.password)
+async def login_hse_user(request: LoginRequest):
+    """
+    HSE team login with company code
+    Returns JWT token with company_id for multi-tenant isolation
+    """
+    from services.auth import authenticate_hse_user
+    result = await authenticate_hse_user(
+        username=request.username,
+        password=request.password,
+        company_code=request.company_code
+    )
     if result["status"] == "error":
         raise HTTPException(status_code=401, detail=result["message"])
     return result
@@ -101,16 +110,43 @@ async def get_users():
     return users_data
 
 @dashboard_router.get("/incidents")
-async def get_incidents_summary():
+async def get_incidents_summary(
+    req: Request,
+    site_id: Optional[int] = None,
+    status: Optional[str] = None,
+    severity: Optional[str] = None
+):
     """
-    Get summary of all incidents with essential information for dashboard display
-    
-    Returns:
-        Dict containing list of incidents with key fields:
-        - category, title, description, severity, verified
-        - incident_id, timestamp, status, location
+    Get summary of incidents for HSE user's company
+    Multi-tenant: Only returns incidents for authenticated user's company
+
+    Query params:
+        site_id: Filter by specific site (optional)
+        status: Filter by status (optional)
+        severity: Filter by severity (optional)
     """
-    return get_incidents_summary_service()
+    from middleware.company_auth import get_current_hse_user
+    from models.db_helper import get_all_incidents_from_db
+
+    # Get authenticated HSE user
+    hse_user = await get_current_hse_user(req)
+    company_id = hse_user['company_id']
+
+    # Get incidents for company with optional filters
+    incidents = get_all_incidents_from_db(
+        company_id=company_id,
+        site_id=site_id,
+        status=status,
+        severity=severity
+    )
+
+    return {
+        "status": "success",
+        "company_id": company_id,
+        "company_name": hse_user.get('company_name'),
+        "total_incidents": len(incidents),
+        "incidents": incidents
+    }
 
 # Request model for creating a user
 class CreateUserRequest(BaseModel):
@@ -135,22 +171,37 @@ async def create_dashboard_user(request: CreateUserRequest):
     return result
 
 @dashboard_router.get("/incident/{incident_id}")
-async def get_incident_by_id(incident_id: str):
+async def get_incident_by_id(incident_id: str, req: Request):
     """
-    Get detailed incident information by ID from analysed incidents data
-    
+    Get detailed incident information by ID
+    Multi-tenant: Validates incident belongs to HSE user's company
+
     Args:
         incident_id: The unique incident identifier
-        
+
     Returns:
-        Dict containing complete analysed incident information including:
-        - category, title, description, severity, verified status
-        - violence_type, weapon, site_description, number_of_people
-        - detected_events with image paths and metadata
-        - location and timestamp information
-        - real_files paths
+        Complete incident information including AI analysis, media files, etc.
     """
-    return get_incident_by_id_service(incident_id)
+    from middleware.company_auth import get_current_hse_user
+    from models.db_helper import get_incident_by_id
+
+    # Get authenticated HSE user
+    hse_user = await get_current_hse_user(req)
+    company_id = hse_user['company_id']
+
+    # Get incident with company validation
+    incident = get_incident_by_id(incident_id, company_id)
+
+    if not incident:
+        raise HTTPException(
+            status_code=404,
+            detail="Incident not found or access denied"
+        )
+
+    return {
+        "status": "success",
+        "incident": incident
+    }
 
 
 @dashboard_router.post("/incident/{incident_id}/video")
