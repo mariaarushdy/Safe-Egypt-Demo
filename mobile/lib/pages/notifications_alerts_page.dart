@@ -1,8 +1,10 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:safe_egypt_v2/models/incident_data.dart';
 import 'package:safe_egypt_v2/services/api_service.dart';
-import 'package:safe_egypt_v2/services/location_service.dart';
+import 'package:safe_egypt_v2/theme/app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class NotificationsAlertsPage extends StatefulWidget {
@@ -16,72 +18,71 @@ class _NotificationsAlertsPageState extends State<NotificationsAlertsPage>
     with SingleTickerProviderStateMixin {
   TextEditingController searchController = TextEditingController();
   String selectedFilter = 'all';
-  
-  // Filter identifiers for logic based on categories from dashboard API
-  List<String> filterIdentifiers = ['all', 'violence', 'accident', 'illegal_activity', 'utility'];
-  
+  String selectedSeverity = 'all';
+
+  // Filter identifiers for safety incident categories
+  List<String> filterIdentifiers = ['all', 'petroleum_safety', 'construction_safety', 'ppe_violation', 'environmental_hazard', 'equipment_damage'];
+
   // Get translated labels for display
   List<String> get filterTabs => [
-    'All'.tr(),
-    'Violence'.tr(), 
-    'Accident'.tr(),
-    'Illegal Activity'.tr(),
-    'Utility'.tr()
+    'All',
+    'Petroleum Safety',
+    'Construction Safety',
+    'PPE Violation',
+    'Environmental',
+    'Equipment'
   ];
-  
+
+  // Severity filter options
+  List<String> get severityFilters => ['all', 'high', 'medium', 'low'];
+
   // Real incidents data from API
   List<AlertIncident> alertIncidents = [];
   bool _isLoadingIncidents = true;
   String? _incidentsError;
-  
-  // Location-based filtering
-  String? _userCity;
-  bool _showAllCities = false;
-  bool _isLoadingLocation = false;
 
   List<AlertIncident> get filteredIncidents {
     List<AlertIncident> filtered = alertIncidents;
-    
-    // Filter by user location (any city)
-    if (!_showAllCities && _userCity != null) {
-      final userCityKeywords = _extractCityKeywords(_userCity!);
-      if (userCityKeywords.isNotEmpty) {
-        filtered = filtered.where((incident) {
-          final incidentLocation = incident.location.toLowerCase();
-          return userCityKeywords.any((keyword) => incidentLocation.contains(keyword));
-        }).toList();
-      }
-    }
-    
+
     // Filter by search query
     if (searchController.text.isNotEmpty) {
       filtered = filtered.where((incident) =>
         incident.title.toLowerCase().contains(searchController.text.toLowerCase()) ||
         incident.description.toLowerCase().contains(searchController.text.toLowerCase()) ||
-        incident.location.toLowerCase().contains(searchController.text.toLowerCase())
+        incident.location.toLowerCase().contains(searchController.text.toLowerCase()) ||
+        (incident.category?.toLowerCase() ?? '').contains(searchController.text.toLowerCase())
       ).toList();
     }
-    
+
     // Filter by selected category tab
     if (selectedFilter != 'all') {
       filtered = filtered.where((incident) {
-        // Using category field from dashboard API instead of type
         String category = incident.category?.toLowerCase() ?? '';
         switch (selectedFilter) {
-          case 'violence':
-            return category == 'violence';
-          case 'accident':
-            return category == 'accident';
-          case 'illegal_activity':
-            return category == 'illegal activity';
-          case 'utility':
-            return category == 'utility';
+          case 'petroleum_safety':
+            return category.contains('petroleum');
+          case 'construction_safety':
+            return category.contains('construction');
+          case 'ppe_violation':
+            return category.contains('ppe') || category.contains('violation');
+          case 'environmental_hazard':
+            return category.contains('environmental') || category.contains('hazard') || category.contains('spill') || category.contains('leak');
+          case 'equipment_damage':
+            return category.contains('equipment') || category.contains('damage');
           default:
             return true;
         }
       }).toList();
     }
-    
+
+    // Filter by severity
+    if (selectedSeverity != 'all') {
+      filtered = filtered.where((incident) {
+        String severityStr = incident.severity.name;
+        return severityStr == selectedSeverity;
+      }).toList();
+    }
+
     return filtered;
   }
 
@@ -89,8 +90,6 @@ class _NotificationsAlertsPageState extends State<NotificationsAlertsPage>
   void initState() {
     super.initState();
     _loadIncidents();
-    _loadUserLocation();
-    _loadLocationPreferences();
   }
 
   @override
@@ -106,9 +105,20 @@ class _NotificationsAlertsPageState extends State<NotificationsAlertsPage>
         _isLoadingIncidents = true;
         _incidentsError = null;
       });
-      
-      final result = await ApiService.getDashboardIncidents();
-      
+
+      // Get access token from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final accessToken = prefs.getString('access_token') ?? '';
+      if (accessToken.isEmpty) {
+        setState(() {
+          _incidentsError = 'Not authenticated';
+          _isLoadingIncidents = false;
+        });
+        return;
+      }
+
+      final result = await ApiService.getDashboardIncidents(accessToken);
+
       if (result['success']) {
         setState(() {
           alertIncidents = _convertDashboardDataToAlertIncidents(result['incidents']);
@@ -222,196 +232,108 @@ class _NotificationsAlertsPageState extends State<NotificationsAlertsPage>
   }
 
   /// Refresh incidents data
-  Future<void> _refreshIncidents() async {
-    await _loadIncidents();
-  }
-
-  /// Load user's current location and determine city
-  Future<void> _loadUserLocation() async {
-    try {
-      setState(() {
-        _isLoadingLocation = true;
-      });
-
-      // Get current location
-      final locationResult = await LocationService.getCurrentLocation();
-      
-      if (locationResult['success']) {
-        double latitude = locationResult['latitude'];
-        double longitude = locationResult['longitude'];
-        
-        // Get location name from API
-        final locationNameResult = await ApiService.getLocationName(
-          latitude: latitude,
-          longitude: longitude,
-        );
-        
-        if (locationNameResult['success']) {
-          String locationName = locationNameResult['location_name'];
-          setState(() {
-            _userCity = locationName;
-            _isLoadingLocation = false;
-          });
-          
-          // Save user's city for future use
-          _saveUserCity(locationName);
-        } else {
-          setState(() {
-            _isLoadingLocation = false;
-          });
-        }
-      } else {
-        // Try to load previously saved city
-        final prefs = await SharedPreferences.getInstance();
-        final savedCity = prefs.getString('user_city');
-        if (savedCity != null) {
-          setState(() {
-            _userCity = savedCity;
-          });
-        }
-        setState(() {
-          _isLoadingLocation = false;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _isLoadingLocation = false;
-      });
-    }
-  }
-
-  /// Save user's city to preferences
-  Future<void> _saveUserCity(String city) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_city', city);
-  }
-
-  /// Load location filtering preferences
-  Future<void> _loadLocationPreferences() async {
-    final prefs = await SharedPreferences.getInstance();
-    final showAllCities = prefs.getBool('show_all_cities') ?? false;
-    setState(() {
-      _showAllCities = showAllCities;
-    });
-  }
-
-  /// Save location filtering preferences
-  Future<void> _saveLocationPreferences() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('show_all_cities', _showAllCities);
-  }
-
-  /// Toggle show all cities filter
-  void _toggleShowAllCities() {
-    setState(() {
-      _showAllCities = !_showAllCities;
-    });
-    _saveLocationPreferences();
-  }
-
-  /// Extract city keywords from location string for filtering
-  List<String> _extractCityKeywords(String location) {
-    final keywords = <String>[];
-    final locationLower = location.toLowerCase();
-    
-    // Common Egyptian cities with their Arabic names
-    final cityMap = {
-      'cairo': ['cairo', 'قاهرة', 'القاهرة'],
-      'alexandria': ['alexandria', 'إسكندرية', 'اسكندرية'],
-      'giza': ['giza', 'جيزة', 'الجيزة'],
-      'luxor': ['luxor', 'أقصر', 'الأقصر'],
-      'aswan': ['aswan', 'أسوان', 'اسوان'],
-      'matrouh': ['matrouh', 'مطروح', 'مرسى مطروح', 'marsa matrouh'],
-      'suez': ['suez', 'سويس', 'السويس'],
-      'port said': ['port said', 'بورسعيد', 'بور سعيد'],
-      'ismailia': ['ismailia', 'إسماعيلية', 'اسماعيلية'],
-      'damietta': ['damietta', 'دمياط'],
-      'mansoura': ['mansoura', 'منصورة', 'المنصورة'],
-      'tanta': ['tanta', 'طنطا'],
-      'zagazig': ['zagazig', 'زقازيق', 'الزقازيق'],
-      'minya': ['minya', 'منيا', 'المنيا'],
-      'asyut': ['asyut', 'أسيوط', 'اسيوط'],
-      'sohag': ['sohag', 'سوهاج'],
-      'qena': ['qena', 'قنا'],
-      'beni suef': ['beni suef', 'بني سويف'],
-      'fayoum': ['fayoum', 'فيوم', 'الفيوم'],
-      'kafr el sheikh': ['kafr el sheikh', 'كفر الشيخ'],
-      'gharbia': ['gharbia', 'غربية', 'الغربية'],
-      'menoufia': ['menoufia', 'منوفية', 'المنوفية'],
-      'dakahlia': ['dakahlia', 'دقهلية', 'الدقهلية'],
-      'beheira': ['beheira', 'بحيرة', 'البحيرة'],
-      'sharqia': ['sharqia', 'شرقية', 'الشرقية'],
-      'red sea': ['red sea', 'بحر أحمر', 'البحر الأحمر'],
-      'north sinai': ['north sinai', 'شمال سيناء'],
-      'south sinai': ['south sinai', 'جنوب سيناء'],
-      'new valley': ['new valley', 'وادي جديد', 'الوادي الجديد'],
-    };
-    
-    // Check if location matches any known city
-    for (final entry in cityMap.entries) {
-      for (final cityKeyword in entry.value) {
-        if (locationLower.contains(cityKeyword.toLowerCase())) {
-          keywords.addAll(entry.value.map((k) => k.toLowerCase()));
-          break;
-        }
-      }
-      if (keywords.isNotEmpty) break;
-    }
-    
-    // If no match found, extract the first word as potential city name
-    if (keywords.isEmpty) {
-      final words = location.split(RegExp(r'[,\s]+'));
-      if (words.isNotEmpty) {
-        final firstWord = words.first.toLowerCase().trim();
-        if (firstWord.isNotEmpty) {
-          keywords.add(firstWord);
-        }
-      }
-    }
-    
-    return keywords;
-  }
 
   @override
   Widget build(BuildContext context) {
+    final totalIncidents = alertIncidents.length;
+    final verifiedCount = alertIncidents.where((incident) => incident.isVerified).length;
+    final highSeverityCount = alertIncidents.where((incident) => incident.severity == AlertSeverity.high).length;
+
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: AppColors.primaryDark,
+      extendBodyBehindAppBar: false,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1E3FA3),
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
-        elevation: 0,
-        title: const Text(
-          'Notifications & Alerts',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
+        elevation: 8,
+        shadowColor: Colors.black.withOpacity(0.35),
+        toolbarHeight: 86,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(18)),
+        ),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: AppColors.primaryGradient,
           ),
         ),
-        actions: [
-          // Location filter toggle or loading indicator
-          if (_isLoadingLocation)
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0),
-              child: SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
-                ),
+        titleSpacing: 16,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Text(
+              'Notifications & Alerts',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+                letterSpacing: 0.3,
               ),
-            )
-          else if (_userCity != null && _extractCityKeywords(_userCity!).isNotEmpty)
-            IconButton(
-              onPressed: _toggleShowAllCities,
-              icon: Icon(
-                _showAllCities ? Icons.location_off : Icons.location_city,
-                color: _showAllCities ? Colors.white70 : Colors.white,
-              ),
-              tooltip: _showAllCities ? 'Show local only' : 'Show all cities',
             ),
-          // Refresh button for incidents
+            SizedBox(height: 2),
+            Text(
+              'Live safety feed • Egypt',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Colors.white70,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.filter_list, color: Colors.white),
+            tooltip: 'Filter by severity',
+            onSelected: (String severity) {
+              setState(() {
+                selectedSeverity = severity;
+              });
+            },
+            itemBuilder: (BuildContext context) {
+              return [
+                const PopupMenuItem<String>(
+                  value: 'all',
+                  child: Row(
+                    children: [
+                      Icon(Icons.all_inclusive, size: 20),
+                      SizedBox(width: 8),
+                      Text('All Severities'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem<String>(
+                  value: 'high',
+                  child: Row(
+                    children: [
+                      Icon(Icons.error, color: AppColors.severityHigh, size: 20),
+                      const SizedBox(width: 8),
+                      const Text('High'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem<String>(
+                  value: 'medium',
+                  child: Row(
+                    children: [
+                      Icon(Icons.warning, color: AppColors.severityMedium, size: 20),
+                      const SizedBox(width: 8),
+                      const Text('Medium'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem<String>(
+                  value: 'low',
+                  child: Row(
+                    children: [
+                      Icon(Icons.info, color: AppColors.severityLow, size: 20),
+                      const SizedBox(width: 8),
+                      const Text('Low'),
+                    ],
+                  ),
+                ),
+              ];
+            },
+          ),
           if (_isLoadingIncidents)
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0),
@@ -426,25 +348,121 @@ class _NotificationsAlertsPageState extends State<NotificationsAlertsPage>
             )
           else
             IconButton(
-              onPressed: _refreshIncidents,
+              onPressed: _loadIncidents,
               icon: const Icon(Icons.refresh),
               tooltip: 'Refresh incidents',
             ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          // Search Bar
-          Container(
-            padding: const EdgeInsets.all(16),
+          _buildBackgroundDecor(),
+          SafeArea(
+            child: Column(
+              children: [
+                const SizedBox(height: 8),
+                _buildSearchBar(),
+                _buildFilterStatus(),
+                _buildFilterTabs(),
+                _buildStatsRow(
+                  totalIncidents: totalIncidents,
+                  verifiedCount: verifiedCount,
+                  highSeverityCount: highSeverityCount,
+                ),
+                _buildRecentAlertsHeader(),
+                const SizedBox(height: 8),
+                Expanded(child: _buildIncidentList()),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBackgroundDecor() {
+    return Positioned.fill(
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: AppColors.primaryGradient,
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              top: -60,
+              right: -20,
+              child: Container(
+                width: 220,
+                height: 220,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.accentPrimary.withOpacity(0.15),
+                      Colors.transparent,
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: -50,
+              left: -20,
+              child: Container(
+                width: 180,
+                height: 180,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.white.withOpacity(0.08),
+                      Colors.transparent,
+                    ],
+                    begin: Alignment.bottomLeft,
+                    end: Alignment.topRight,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            decoration: AppColors.frostedGlass(radius: 12).copyWith(
+              border: Border.all(
+                color: Colors.white.withOpacity(0.2),
+              ),
+            ),
             child: TextField(
               controller: searchController,
               onChanged: (value) => setState(() {}),
+              style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
-                hintText: 'Search alerts...',
-                prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                filled: true,
-                fillColor: Colors.white,
+                hintText: 'Search title, category, location...',
+                hintStyle: TextStyle(color: Colors.white.withOpacity(0.65)),
+                prefixIcon: Icon(Icons.search, color: Colors.white.withOpacity(0.8)),
+                suffixIcon: searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(Icons.close, color: Colors.white.withOpacity(0.7)),
+                        onPressed: () {
+                          searchController.clear();
+                          setState(() {});
+                        },
+                      )
+                    : null,
+                filled: false,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -453,372 +471,639 @@ class _NotificationsAlertsPageState extends State<NotificationsAlertsPage>
               ),
             ),
           ),
-          
-          // Location filter status
-          if (_userCity != null && _extractCityKeywords(_userCity!).isNotEmpty && !_showAllCities)
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E3FA3).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: const Color(0xFF1E3FA3).withOpacity(0.3),
-                  width: 1,
-                ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterStatus() {
+    if (selectedFilter == 'all' && selectedSeverity == 'all') {
+      return const SizedBox(height: 8);
+    }
+
+    final filterLabel = selectedFilter != 'all'
+        ? filterTabs[filterIdentifiers.indexOf(selectedFilter)]
+        : 'All';
+    final severityLabel = selectedSeverity != 'all' ? selectedSeverity.toUpperCase() : 'ANY';
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: AppColors.frostedGlass(radius: 12),
+      child: Row(
+        children: [
+          Icon(
+            Icons.filter_alt_rounded,
+            size: 20,
+            color: AppColors.accentLight,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Filters • $filterLabel • $severityLabel',
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.2,
               ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.location_city,
-                    size: 20,
-                    color: const Color(0xFF1E3FA3),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'location.showing_local_only'.tr(),
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: const Color(0xFF1E3FA3),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: _toggleShowAllCities,
-                    style: TextButton.styleFrom(
-                      minimumSize: Size.zero,
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    ),
-                    child: Text(
-                      'location.show_all'.tr(),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: const Color(0xFF1E3FA3),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          
-          // Filter Tabs
-          Container(
-            height: 50,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: filterTabs.length,
-               itemBuilder: (context, index) {
-                 final tab = filterTabs[index];
-                 final filterId = filterIdentifiers[index];
-                 final isSelected = selectedFilter == filterId;
-                
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: FilterChip(
-                    label: Text(tab),
-                    selected: isSelected,
-                     onSelected: (selected) {
-                       setState(() {
-                         selectedFilter = filterId;
-                       });
-                     },
-                    backgroundColor: Colors.grey[200],
-                    selectedColor: const Color(0xFF1E3FA3),
-                    labelStyle: TextStyle(
-                      color: isSelected ? Colors.white : Colors.black87,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                );
-              },
             ),
           ),
-          
-          const SizedBox(height: 16),
-          
-          // Recent Alerts Header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Recent Alerts',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                selectedFilter = 'all';
+                selectedSeverity = 'all';
+              });
+            },
+            style: TextButton.styleFrom(
+              minimumSize: Size.zero,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            ),
+            child: Text(
+              'Clear',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.accentLight,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterTabs() {
+    return Container(
+      height: 46,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: filterTabs.length,
+        itemBuilder: (context, index) {
+          final tab = filterTabs[index];
+          final filterId = filterIdentifiers[index];
+          final isSelected = selectedFilter == filterId;
+
+          return Padding(
+            padding: EdgeInsets.only(right: index == filterTabs.length - 1 ? 0 : 10),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              decoration: BoxDecoration(
+                gradient: isSelected ? AppColors.accentGradient : null,
+                color: isSelected ? null : Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: isSelected
+                      ? AppColors.accentSecondary
+                      : Colors.white.withOpacity(0.2),
+                  width: isSelected ? 1.6 : 1,
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      '${filteredIncidents.length} alerts',
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: AppColors.accentPrimary.withOpacity(0.25),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ]
+                    : [],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(24),
+                  onTap: () {
+                    setState(() {
+                      selectedFilter = filterId;
+                    });
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    child: Text(
+                      tab,
                       style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
+                        color: Colors.white,
+                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                        fontSize: 12,
+                        letterSpacing: 0.1,
                       ),
                     ),
-                    if (_userCity != null && _extractCityKeywords(_userCity!).isNotEmpty && !_showAllCities)
-                      Text(
-                        'location.local_only'.tr(),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: const Color(0xFF1E3FA3),
-                          fontWeight: FontWeight.w500,
-                        ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildStatsRow({
+    required int totalIncidents,
+    required int verifiedCount,
+    required int highSeverityCount,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Row(
+        children: [
+          _buildStatCard(
+            title: 'Viewing',
+            value: '${filteredIncidents.length}',
+            icon: Icons.remove_red_eye_outlined,
+            gradient: LinearGradient(
+              colors: [
+                AppColors.accentPrimary.withOpacity(0.25),
+                AppColors.accentSecondary.withOpacity(0.12),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          _buildStatCard(
+            title: 'Verified',
+            value: totalIncidents == 0 ? '0' : '$verifiedCount/$totalIncidents',
+            icon: Icons.verified,
+            gradient: LinearGradient(
+              colors: [
+                AppColors.success.withOpacity(0.22),
+                Colors.white.withOpacity(0.05),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          _buildStatCard(
+            title: 'High Priority',
+            value: '$highSeverityCount',
+            icon: Icons.priority_high_rounded,
+            gradient: LinearGradient(
+              colors: [
+                AppColors.severityHigh.withOpacity(0.25),
+                Colors.white.withOpacity(0.05),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Gradient gradient,
+  }) {
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        padding: const EdgeInsets.all(12),
+        decoration: AppColors.cardDecoration(radius: 14).copyWith(
+          gradient: gradient,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Icon(icon, color: Colors.white, size: 18),
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.7),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              title,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecentAlertsHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Text(
+                'Recent Alerts',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  letterSpacing: 0.3,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'Stay ahead of nearby risks',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              gradient: AppColors.accentGradient,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.accentPrimary.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.white.withOpacity(0.8),
+                        blurRadius: 6,
+                        spreadRadius: 1,
                       ),
-                  ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '${filteredIncidents.length} alerts',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
                 ),
               ],
             ),
           ),
-          
-          const SizedBox(height: 8),
-          
-          // Incidents List
-          Expanded(
-            child: _isLoadingIncidents
-                ? const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CircularProgressIndicator(),
-                        SizedBox(height: 16),
-                        Text(
-                          'Loading incidents...',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : _incidentsError != null
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.error_outline,
-                              size: 64,
-                              color: Colors.red[400],
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Error loading incidents',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey[600],
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 32),
-                              child: Text(
-                                _incidentsError!,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[500],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: _refreshIncidents,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF1E3FA3),
-                                foregroundColor: Colors.white,
-                              ),
-                              child: const Text('Retry'),
-                            ),
-                          ],
-                        ),
-                      )
-                    : filteredIncidents.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.notifications_off,
-                                  size: 64,
-                                  color: Colors.grey[400],
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'No alerts found',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.grey[600],
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Try adjusting your search or filters',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[500],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : RefreshIndicator(
-                            onRefresh: _refreshIncidents,
-                            child: ListView.builder(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              itemCount: filteredIncidents.length,
-                              itemBuilder: (context, index) {
-                                final incident = filteredIncidents[index];
-                                return _buildIncidentCard(incident);
-                              },
-                            ),
-                          ),
-          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildIncidentList() {
+    if (_isLoadingIncidents) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Loading incidents...',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.white70,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_incidentsError != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: AppColors.error,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Error loading incidents',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                _incidentsError!,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.white.withOpacity(0.7),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadIncidents,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accentPrimary,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (filteredIncidents.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.notifications_off,
+              size: 64,
+              color: Colors.white.withOpacity(0.6),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'No alerts found',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Adjust your filters or try again later',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.white.withOpacity(0.7),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      color: AppColors.accentPrimary,
+      backgroundColor: AppColors.primaryMedium,
+      onRefresh: _loadIncidents,
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount: filteredIncidents.length,
+        itemBuilder: (context, index) {
+          final incident = filteredIncidents[index];
+          return _buildIncidentCard(incident);
+        },
       ),
     );
   }
 
   Widget _buildIncidentCard(AlertIncident incident) {
+    final Color severityColor = _severityColor(incident.severity);
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: AppColors.cardDecoration(radius: 18).copyWith(
+        gradient: LinearGradient(
+          colors: [
+            severityColor.withOpacity(0.16),
+            Colors.white.withOpacity(0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(
+          color: severityColor.withOpacity(0.35),
+          width: 1.2,
+        ),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () {},
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      gradient: AppColors.accentGradient,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.white.withOpacity(0.25)),
+                    ),
+                    child: Center(
+                      child: Text(
+                        incident.icon,
+                        style: const TextStyle(fontSize: 24),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                incident.title,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              _formatTimeAgo(incident.timestamp),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.white.withOpacity(0.75),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _buildPriorityBadge(incident.severity),
+                            _buildVerificationChip(incident.isVerified),
+                            if ((incident.category ?? '').isNotEmpty)
+                              _buildInfoChip(
+                                label: incident.category!,
+                                icon: Icons.category_rounded,
+                                color: Colors.white.withOpacity(0.85),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                incident.description,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.white.withOpacity(0.92),
+                  height: 1.4,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Icon(
+                    Icons.location_on_rounded,
+                    size: 16,
+                    color: AppColors.accentLight,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      incident.location,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white.withOpacity(0.85),
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: severityColor.withOpacity(0.8),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPriorityBadge(AlertSeverity severity) {
+    Color badgeColor;
+    String text;
+    IconData icon;
+
+    switch (severity) {
+      case AlertSeverity.high:
+        badgeColor = AppColors.severityHigh;
+        text = 'incidents.severity_high'.tr();
+        icon = Icons.error_rounded;
+        break;
+      case AlertSeverity.medium:
+        badgeColor = AppColors.severityMedium;
+        text = 'incidents.severity_medium'.tr();
+        icon = Icons.warning_rounded;
+        break;
+      case AlertSeverity.low:
+        badgeColor = AppColors.severityLow;
+        text = 'incidents.severity_low'.tr();
+        icon = Icons.info_rounded;
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: LinearGradient(
+          colors: [
+            badgeColor.withOpacity(0.95),
+            badgeColor.withOpacity(0.7),
+          ],
+        ),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.2),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: badgeColor.withOpacity(0.35),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Icon
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: incident.iconColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Text(
-                incident.icon,
-                style: const TextStyle(fontSize: 20),
-              ),
-            ),
+          Icon(
+            icon,
+            size: 12,
+            color: Colors.white,
           ),
-          
-          const SizedBox(width: 12),
-          
-          // Content
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Title and Priority
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        incident.title,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ),
-                    _buildPriorityBadge(incident.severity),
-                  ],
-                ),
-                
-                const SizedBox(height: 4),
-                
-                // Verification Status
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: incident.isVerified ? Colors.green : Colors.grey,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    incident.isVerified ? 'incidents.verified'.tr() : 'incidents.unverified'.tr(),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                
-                const SizedBox(height: 8),
-                
-                // Description
-                Text(
-                  incident.description,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[700],
-                    height: 1.3,
-                  ),
-                ),
-                
-                const SizedBox(height: 8),
-                
-                // Location and Time
-                Row(
-                  children: [
-                    Icon(
-                      Icons.location_on,
-                      size: 16,
-                      color: Colors.grey[500],
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        incident.location,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(
-                      Icons.access_time,
-                      size: 16,
-                      color: Colors.grey[500],
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      _formatTimeAgo(incident.timestamp),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: const TextStyle(
+              fontSize: 11,
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -826,40 +1111,93 @@ class _NotificationsAlertsPageState extends State<NotificationsAlertsPage>
     );
   }
 
-  Widget _buildPriorityBadge(AlertSeverity severity) {
-    Color backgroundColor;
-    String text;
-    
-    switch (severity) {
-      case AlertSeverity.high:
-        backgroundColor = Colors.red;
-        text = 'incidents.severity_high'.tr();
-        break;
-      case AlertSeverity.medium:
-        backgroundColor = Colors.orange;
-        text = 'incidents.severity_medium'.tr();
-        break;
-      case AlertSeverity.low:
-        backgroundColor = Colors.green;
-        text = 'incidents.severity_low'.tr();
-        break;
-    }
-    
+  Widget _buildVerificationChip(bool isVerified) {
+    final Gradient gradient = isVerified
+        ? AppColors.accentGradient
+        : LinearGradient(
+            colors: [
+              Colors.white.withOpacity(0.12),
+              Colors.white.withOpacity(0.05),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          );
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: backgroundColor,
+        gradient: gradient,
         borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 12,
-          color: Colors.white,
-          fontWeight: FontWeight.w500,
+        border: Border.all(
+          color: Colors.white.withOpacity(0.2),
+          width: 1,
         ),
       ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isVerified ? Icons.verified_rounded : Icons.pending_outlined,
+            size: 12,
+            color: Colors.white,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            isVerified ? 'incidents.verified'.tr() : 'incidents.unverified'.tr(),
+            style: const TextStyle(
+              fontSize: 11,
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  Widget _buildInfoChip({
+    required String label,
+    required IconData icon,
+    Color? color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 12,
+            color: color ?? Colors.white,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: color ?? Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _severityColor(AlertSeverity severity) {
+    switch (severity) {
+      case AlertSeverity.high:
+        return AppColors.severityHigh;
+      case AlertSeverity.medium:
+        return AppColors.severityMedium;
+      case AlertSeverity.low:
+        return AppColors.severityLow;
+    }
   }
 
   String _formatTimeAgo(DateTime timestamp) {

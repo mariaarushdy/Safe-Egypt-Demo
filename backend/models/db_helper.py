@@ -1,9 +1,9 @@
 import psycopg2
-from psycopg2.extras import Json
+from psycopg2.extras import Json, RealDictCursor
 from dotenv import load_dotenv
 import os
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 import uuid
 from datetime import datetime
 
@@ -27,246 +27,481 @@ def get_db_connection():
         raise
 
 
-def save_location(conn, latitude: float, longitude: float, address: str) -> int:
+# ==================== COMPANY FUNCTIONS ====================
+
+def get_company_by_code(company_code: str) -> Optional[Dict]:
     """
-    Save location to database and return location_id
+    Get company information by company code
+    Used for authentication
     """
+    conn = None
     try:
-        cur = conn.cursor()
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
         cur.execute("""
-            INSERT INTO locations (address, latitude, longitude)
-            VALUES (%s, %s, %s)
-            RETURNING id;
-        """, (address, latitude, longitude))
-        
-        location_id = cur.fetchone()[0]
-        conn.commit()
+            SELECT id, company_code, company_name, industry_type, is_active
+            FROM companies
+            WHERE company_code = %s AND is_active = TRUE;
+        """, (company_code,))
+
+        company = cur.fetchone()
         cur.close()
-        return location_id
+        conn.close()
+
+        if company:
+            return dict(company)
+        return None
+
     except Exception as e:
-        conn.rollback()
-        logger.error(f"Error saving location: {str(e)}")
-        raise
+        if conn:
+            conn.close()
+        logger.error(f"Error getting company by code: {str(e)}")
+        return None
 
 
-def get_or_create_user_by_device(device_id: str) -> Optional[int]:
+def get_company_by_id(company_id: int) -> Optional[Dict]:
+    """Get company information by ID"""
+    conn = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute("""
+            SELECT *
+            FROM companies
+            WHERE id = %s;
+        """, (company_id,))
+
+        company = cur.fetchone()
+        cur.close()
+        conn.close()
+
+        if company:
+            return dict(company)
+        return None
+
+    except Exception as e:
+        if conn:
+            conn.close()
+        logger.error(f"Error getting company: {str(e)}")
+        return None
+
+
+# ==================== SITE FUNCTIONS ====================
+
+def get_sites_by_company(company_id: int) -> List[Dict]:
     """
-    Get or create anonymous user by device_id
-    Anonymous users only have device_id (no national_id until they register)
-    Returns app_user_id
+    Get all sites for a specific company
+    """
+    conn = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute("""
+            SELECT id, site_name, site_type, site_code, address,
+                   latitude, longitude, manager_name, is_active
+            FROM sites
+            WHERE company_id = %s AND is_active = TRUE
+            ORDER BY site_name;
+        """, (company_id,))
+
+        sites = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        return [dict(site) for site in sites]
+
+    except Exception as e:
+        if conn:
+            conn.close()
+        logger.error(f"Error getting sites: {str(e)}")
+        return []
+
+
+def get_site_by_id(site_id: int, company_id: int) -> Optional[Dict]:
+    """
+    Get site by ID with company validation (multi-tenant security)
+    """
+    conn = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute("""
+            SELECT *
+            FROM sites
+            WHERE id = %s AND company_id = %s;
+        """, (site_id, company_id))
+
+        site = cur.fetchone()
+        cur.close()
+        conn.close()
+
+        if site:
+            return dict(site)
+        return None
+
+    except Exception as e:
+        if conn:
+            conn.close()
+        logger.error(f"Error getting site: {str(e)}")
+        return None
+
+
+def get_zones_by_site(site_id: int, company_id: int) -> List[Dict]:
+    """
+    Get all zones for a specific site (with company validation)
+    """
+    conn = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        # Validate site belongs to company first
+        cur.execute("""
+            SELECT id FROM sites WHERE id = %s AND company_id = %s;
+        """, (site_id, company_id))
+
+        if not cur.fetchone():
+            cur.close()
+            conn.close()
+            logger.warning(f"Site {site_id} does not belong to company {company_id}")
+            return []
+
+        # Get zones
+        cur.execute("""
+            SELECT id, zone_name, zone_code, hazard_level, description
+            FROM site_zones
+            WHERE site_id = %s
+            ORDER BY zone_name;
+        """, (site_id,))
+
+        zones = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        return [dict(zone) for zone in zones]
+
+    except Exception as e:
+        if conn:
+            conn.close()
+        logger.error(f"Error getting zones: {str(e)}")
+        return []
+
+
+# ==================== WORKER FUNCTIONS ====================
+
+def get_worker_by_id(worker_id: int, company_id: int) -> Optional[Dict]:
+    """
+    Get worker by ID with company validation
+    """
+    conn = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute("""
+            SELECT id, company_id, username, full_name, employee_id,
+                   role, department, is_active
+            FROM workers
+            WHERE id = %s AND company_id = %s;
+        """, (worker_id, company_id))
+
+        worker = cur.fetchone()
+        cur.close()
+        conn.close()
+
+        if worker:
+            return dict(worker)
+        return None
+
+    except Exception as e:
+        if conn:
+            conn.close()
+        logger.error(f"Error getting worker: {str(e)}")
+        return None
+
+
+def get_worker_by_device_id(device_id: str) -> Optional[Dict]:
+    """
+    Get worker by device_id (for mobile app authentication)
+    """
+    conn = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute("""
+            SELECT w.*, c.company_code, c.company_name
+            FROM workers w
+            JOIN companies c ON w.company_id = c.id
+            WHERE w.device_id = %s AND w.is_active = TRUE;
+        """, (device_id,))
+
+        worker = cur.fetchone()
+        cur.close()
+        conn.close()
+
+        if worker:
+            return dict(worker)
+        return None
+
+    except Exception as e:
+        if conn:
+            conn.close()
+        logger.error(f"Error getting worker by device: {str(e)}")
+        return None
+
+
+def update_worker_device_id(worker_id: int, device_id: str) -> bool:
+    """
+    Update worker's device_id (when logging in from a new device)
     """
     conn = None
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        
-        # Check if device exists
-        cur.execute("SELECT id FROM app_users WHERE device_id = %s;", (device_id,))
-        result = cur.fetchone()
-        
-        if result:
-            user_id = result[0]
-            logger.info(f"Found existing user for device_id={device_id}, user_id={user_id}")
-        else:
-            # Create anonymous user (only device_id, no national_id)
-            cur.execute("""
-                INSERT INTO app_users (device_id)
-                VALUES (%s)
-                RETURNING id;
-            """, (device_id,))
-            user_id = cur.fetchone()[0]
-            conn.commit()
-            logger.info(f"Created anonymous user for device_id={device_id}, user_id={user_id}")
-        
+
+        cur.execute("""
+            UPDATE workers
+            SET device_id = %s, last_login = CURRENT_TIMESTAMP
+            WHERE id = %s;
+        """, (device_id, worker_id))
+
+        conn.commit()
         cur.close()
         conn.close()
-        return user_id
-        
+
+        logger.info(f"Updated device_id for worker {worker_id}")
+        return True
+
     except Exception as e:
         if conn:
             conn.rollback()
             conn.close()
-        logger.error(f"Error in get_or_create_user_by_device: {str(e)}")
-        return None
+        logger.error(f"Error updating device_id: {str(e)}")
+        return False
 
+
+# ==================== INCIDENT FUNCTIONS ====================
 
 def save_ai_analysis_to_db(
     incident_id: str,
+    company_id: int,
+    site_id: int,
+    worker_id: int,
     ai_analysis: Dict[Any, Any],
+    timestamp: str,
+    file_paths: list,
     latitude: float,
     longitude: float,
     address: str,
-    timestamp: str,
-    file_paths: list,
-    device_id: str,
-    app_user_id: Optional[int] = None,
+    zone_id: Optional[int] = None,
     real_files: Optional[list] = None
 ) -> bool:
     """
-    Save AI analysis results to the database.
-    
+    Save AI analysis results to the database with multi-tenant isolation
+
     Args:
         incident_id: UUID of the incident
+        company_id: Company ID (for multi-tenant isolation)
+        site_id: Site ID where incident occurred
+        worker_id: Worker who reported the incident
         ai_analysis: AI analysis results dictionary
-        latitude: Latitude coordinate
-        longitude: Longitude coordinate
-        address: Geocoded address
         timestamp: Incident timestamp
         file_paths: List of file paths for media files
-        device_id: Device ID of the reporter
-        app_user_id: Optional user ID if not anonymous
-        real_files: Optional list of file metadata (original names, paths, etc.)
-        
+        zone_id: Optional zone ID within the site
+        real_files: Optional list of file metadata
+
     Returns:
         True if successful, False otherwise
     """
     conn = None
     try:
         conn = get_db_connection()
-        
-        # 1. Get or create user by device_id
-        if not app_user_id:
-            app_user_id = get_or_create_user_by_device(device_id)
-        
-        # 2. Save location
-        location_id = save_location(conn, latitude, longitude, address)
-        logger.info(f"Location saved with id={location_id}")
-        
-        # 3. Parse timestamp
+        cur = conn.cursor()
+
+        # Parse timestamp
         try:
             incident_timestamp = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
         except:
             incident_timestamp = datetime.now()
-        
-        # 4. Save incident with AI analysis data
-        cur = conn.cursor()
+
+        # Normalize severity to match DB constraint ('Low','Medium','High')
+        severity_raw = ai_analysis.get('severity')
+        severity_normalized = None
+        if severity_raw:
+            sev = str(severity_raw).lower()
+            if sev in ['low', 'medium', 'high']:
+                severity_normalized = sev.capitalize()
+            else:
+                severity_normalized = 'Medium'
+        else:
+            severity_normalized = 'Medium'
+
+        # Save incident with AI analysis data (using new schema)
         cur.execute("""
             INSERT INTO incidents (
                 incident_id,
-                app_user_id,
+                company_id,
+                site_id,
+                zone_id,
+                worker_id,
                 category,
                 title,
                 description,
                 severity,
                 verified,
-                violence_type,
-                weapon,
+                site_type,
                 site_description,
                 number_of_people,
                 description_of_people,
                 detailed_description_for_the_incident,
-                accident_type,
                 vehicles_machines_involved,
-                utility_type,
                 extent_of_impact,
                 duration,
-                illegal_type,
-                items_involved,
+                petroleum_type,
+                substance_involved,
+                equipment_id,
+                spill_volume,
+                environmental_impact,
+                ppe_missing,
+                construction_type,
+                structure_affected,
+                materials_involved,
+                height_elevation,
+                equipment_involved,
                 detected_events,
                 timestamp,
                 status,
-                location_id,
-                real_files
+                real_files,
+                latitude,
+                longitude,
+                address
             ) VALUES (
                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                %s, %s, %s, %s, %s
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s, %s
             );
         """, (
             incident_id,
-            app_user_id,
+            company_id,
+            site_id,
+            zone_id,
+            worker_id,
             ai_analysis.get('category'),
             ai_analysis.get('title'),
             ai_analysis.get('description'),
-            ai_analysis.get('severity'),
+            severity_normalized,
             ai_analysis.get('verified'),
-            ai_analysis.get('violence_type'),
-            ai_analysis.get('weapon'),
+            ai_analysis.get('site_type'),
             ai_analysis.get('site_description'),
             ai_analysis.get('number_of_people'),
             ai_analysis.get('description_of_people'),
             ai_analysis.get('detailed_description_for_the_incident'),
-            ai_analysis.get('accident_type'),
             ai_analysis.get('vehicles_machines_involved'),
-            ai_analysis.get('utility_type'),
             ai_analysis.get('extent_of_impact'),
             ai_analysis.get('duration'),
-            ai_analysis.get('illegal_type'),
-            ai_analysis.get('items_involved'),
+            ai_analysis.get('petroleum_type'),
+            ai_analysis.get('substance_involved'),
+            ai_analysis.get('equipment_id'),
+            ai_analysis.get('spill_volume'),
+            ai_analysis.get('environmental_impact'),
+            Json(ai_analysis.get('ppe_missing', [])),
+            ai_analysis.get('construction_type'),
+            ai_analysis.get('structure_affected'),
+            ai_analysis.get('materials_involved'),
+            ai_analysis.get('height_elevation'),
+            ai_analysis.get('equipment_involved'),
             Json(ai_analysis.get('detected_events', [])),
             incident_timestamp,
             'pending',
-            location_id,
-            Json(real_files) if real_files else None
+            Json(real_files) if real_files else None,
+            latitude,
+            longitude,
+            address
         ))
-        
-        logger.info(f"Incident saved with id={incident_id}, user_id={app_user_id}")
-        
-        # 5. Save media files
+
+        logger.info(f"Incident saved: id={incident_id}, company={company_id}, site={site_id}, worker={worker_id}")
+
+        # Save media files
         for file_path in file_paths:
             file_ext = os.path.splitext(file_path)[1].lower()
             media_type = 'video' if file_ext in ['.mp4', '.avi', '.mov', '.mkv'] else 'image'
-            
+
             cur.execute("""
                 INSERT INTO media_files (incident_id, file_path, media_type)
                 VALUES (%s, %s, %s);
             """, (incident_id, file_path, media_type))
-        
+
         logger.info(f"Saved {len(file_paths)} media file(s)")
-        
+
         conn.commit()
         cur.close()
         conn.close()
-        
-        logger.info(f"✅ Successfully saved AI analysis for incident {incident_id} to database")
+
+        logger.info(f"✅ Successfully saved AI analysis for incident {incident_id}")
         return True
-        
+
     except Exception as e:
         if conn:
             conn.rollback()
             conn.close()
-        logger.error(f"❌ Error saving AI analysis to database: {str(e)}")
+        logger.error(f"❌ Error saving AI analysis: {str(e)}")
         logger.exception("Full traceback:")
         return False
 
 
-def get_incident_by_id(incident_id: str) -> Optional[Dict]:
+def get_incident_by_id(incident_id: str, company_id: int) -> Optional[Dict]:
     """
-    Retrieve incident data from database by incident_id
+    Retrieve incident data by ID with company validation (multi-tenant security)
     """
     conn = None
     try:
         conn = get_db_connection()
-        cur = conn.cursor()
-        
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
         cur.execute("""
-            SELECT 
+            SELECT
                 i.*,
-                l.address,
-                l.latitude,
-                l.longitude,
-                json_agg(
-                    json_build_object(
-                        'file_path', m.file_path,
-                        'media_type', m.media_type
-                    )
+                s.site_name,
+                s.site_code,
+                s.address as site_address,
+                s.latitude as site_latitude,
+                s.longitude as site_longitude,
+                z.zone_name,
+                z.zone_code,
+                w.full_name as worker_name,
+                w.employee_id,
+                COALESCE(
+                    json_agg(
+                        json_build_object(
+                            'file_path', m.file_path,
+                            'media_type', m.media_type
+                        )
+                    ) FILTER (WHERE m.id IS NOT NULL),
+                    '[]'::json
                 ) as media_files
             FROM incidents i
-            LEFT JOIN locations l ON i.location_id = l.id
+            JOIN sites s ON i.site_id = s.id
+            LEFT JOIN site_zones z ON i.zone_id = z.id
+            LEFT JOIN workers w ON i.worker_id = w.id
             LEFT JOIN media_files m ON i.incident_id = m.incident_id
-            WHERE i.incident_id = %s
-            GROUP BY i.incident_id, l.id;
-        """, (incident_id,))
-        
-        row = cur.fetchone()
+            WHERE i.incident_id = %s AND i.company_id = %s
+            GROUP BY i.incident_id, s.id, z.id, w.id;
+        """, (incident_id, company_id))
+
+        incident = cur.fetchone()
         cur.close()
         conn.close()
-        
-        if row:
-            # Convert to dictionary (you may need to adjust column names)
-            return dict(row)
+
+        if incident:
+            return dict(incident)
         return None
-        
+
     except Exception as e:
         if conn:
             conn.close()
@@ -274,35 +509,158 @@ def get_incident_by_id(incident_id: str) -> Optional[Dict]:
         return None
 
 
-def update_incident_status(incident_id: str, new_status: str) -> bool:
+def get_all_incidents_from_db(
+    company_id: int,
+    site_id: Optional[int] = None,
+    status: Optional[str] = None,
+    severity: Optional[str] = None,
+    limit: int = 100
+) -> List[Dict]:
     """
-    Update the status of an incident
-    
+    Get all incidents for a company with optional filtering
+    Multi-tenant: Only returns incidents for specified company
+    """
+    conn = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        # Build query with filters
+        query = """
+            SELECT
+                i.incident_id,
+                i.company_id,
+                i.category,
+                i.title,
+                i.description,
+                i.severity,
+                i.timestamp,
+                i.status,
+                i.verified,
+                i.site_type,
+                i.petroleum_type,
+                i.construction_type,
+                i.site_description,
+                i.detected_events,
+                i.real_files,
+                i.latitude,
+                i.longitude,
+                i.address,
+                s.site_name,
+                s.site_code,
+                s.address as site_address,
+                s.latitude as site_latitude,
+                s.longitude as site_longitude,
+                z.zone_name,
+                w.full_name as worker_name,
+                w.employee_id,
+                COALESCE(
+                    json_agg(
+                        json_build_object(
+                            'file_path', m.file_path,
+                            'media_type', m.media_type
+                        )
+                    ) FILTER (WHERE m.id IS NOT NULL),
+                    '[]'::json
+                ) as media_files
+            FROM incidents i
+            JOIN sites s ON i.site_id = s.id
+            LEFT JOIN site_zones z ON i.zone_id = z.id
+            LEFT JOIN workers w ON i.worker_id = w.id
+            LEFT JOIN media_files m ON i.incident_id = m.incident_id
+            WHERE i.company_id = %s
+        """
+
+        params = [company_id]
+
+        if site_id:
+            query += " AND i.site_id = %s"
+            params.append(site_id)
+
+        if status:
+            query += " AND i.status = %s"
+            params.append(status)
+
+        if severity:
+            query += " AND i.severity = %s"
+            params.append(severity)
+
+        query += """
+            GROUP BY i.incident_id, s.id, z.id, w.id
+            ORDER BY i.timestamp DESC
+            LIMIT %s;
+        """
+        params.append(limit)
+
+        cur.execute(query, params)
+
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        return [dict(row) for row in rows]
+
+    except Exception as e:
+        if conn:
+            conn.close()
+        logger.error(f"Error getting incidents: {str(e)}")
+        return []
+
+
+def update_incident_status(
+    incident_id: str,
+    company_id: int,
+    new_status: str,
+    assigned_to: Optional[int] = None,
+    resolution_notes: Optional[str] = None
+) -> bool:
+    """
+    Update incident status with company validation
+
     Args:
-        incident_id: UUID of the incident
-        new_status: New status value (pending, in_progress, resolved, etc.)
-    
-    Returns:
-        True if successful, False otherwise
+        incident_id: UUID of incident
+        company_id: Company ID (for multi-tenant security)
+        new_status: New status value
+        assigned_to: Optional HSE user ID
+        resolution_notes: Optional resolution notes
     """
     conn = None
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        
-        cur.execute("""
+
+        # Build update query
+        update_fields = ["status = %s", "updated_at = CURRENT_TIMESTAMP"]
+        params = [new_status]
+
+        if assigned_to is not None:
+            update_fields.append("assigned_to = %s")
+            params.append(assigned_to)
+
+        if resolution_notes:
+            update_fields.append("resolution_notes = %s")
+            params.append(resolution_notes)
+
+        if new_status in ['resolved', 'closed']:
+            update_fields.append("resolved_at = CURRENT_TIMESTAMP")
+
+        params.extend([incident_id, company_id])
+
+        query = f"""
             UPDATE incidents
-            SET status = %s
-            WHERE incident_id = %s;
-        """, (new_status, incident_id))
-        
+            SET {', '.join(update_fields)}
+            WHERE incident_id = %s AND company_id = %s;
+        """
+
+        cur.execute(query, params)
+
         conn.commit()
         cur.close()
         conn.close()
-        
+
         logger.info(f"✅ Updated incident {incident_id} status to {new_status}")
         return True
-        
+
     except Exception as e:
         if conn:
             conn.rollback()
@@ -311,184 +669,46 @@ def update_incident_status(incident_id: str, new_status: str) -> bool:
         return False
 
 
-def get_all_incidents_from_db():
+def get_incidents_count_by_company(company_id: int) -> Dict[str, int]:
     """
-    Get all incidents from database with location and media files
+    Get incident statistics for a company
     """
     conn = None
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        
+
         cur.execute("""
-            SELECT 
-                i.incident_id,
-                i.category,
-                i.title,
-                i.description,
-                i.severity,
-                i.timestamp,
-                i.status,
-                i.violence_type,
-                i.weapon,
-                i.site_description,
-                i.number_of_people,
-                i.description_of_people,
-                i.detailed_description_for_the_incident,
-                i.accident_type,
-                i.vehicles_machines_involved,
-                i.utility_type,
-                i.extent_of_impact,
-                i.duration,
-                i.illegal_type,
-                i.items_involved,
-                i.detected_events,
-                i.location_id,
-                i.real_files,
-                i.verified,
-                l.address,
-                l.latitude,
-                l.longitude,
-                COALESCE(
-                    json_agg(
-                        json_build_object(
-                            'file_path', m.file_path,
-                            'media_type', m.media_type
-                        )
-                    ) FILTER (WHERE m.id IS NOT NULL), 
-                    '[]'::json
-                ) as media_files,
-                u.device_id,
-                COALESCE(u.full_name, 'Anonymous User') as full_name,
-                u.national_id
-            FROM incidents i
-            LEFT JOIN locations l ON i.location_id = l.id
-            LEFT JOIN media_files m ON i.incident_id = m.incident_id
-            LEFT JOIN app_users u ON i.app_user_id = u.id
-            GROUP BY i.incident_id, l.id, u.id
-            ORDER BY i.timestamp DESC;
-        """)
-        
-        rows = cur.fetchall()
+            SELECT
+                COUNT(*) as total,
+                COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
+                COUNT(CASE WHEN status = 'under_review' THEN 1 END) as under_review,
+                COUNT(CASE WHEN status = 'investigating' THEN 1 END) as investigating,
+                COUNT(CASE WHEN status = 'resolved' THEN 1 END) as resolved,
+                COUNT(CASE WHEN severity = 'High' THEN 1 END) as high_severity,
+                COUNT(CASE WHEN severity = 'Medium' THEN 1 END) as medium_severity,
+                COUNT(CASE WHEN severity = 'Low' THEN 1 END) as low_severity
+            FROM incidents
+            WHERE company_id = %s;
+        """, (company_id,))
+
+        row = cur.fetchone()
         cur.close()
         conn.close()
-        
-        incidents = []
-        incidents = []
-        for row in rows:
-            incidents.append({
-                'incident_id': str(row[0]),
-                'category': row[1],
-                'title': row[2],
-                'description': row[3],
-                'severity': row[4],
-                'timestamp': row[5].isoformat() if row[5] else None,
-                'status': row[6],
-                'violence_type': row[7],
-                'weapon': row[8],
-                'site_description': row[9],
-                'number_of_people': row[10],
-                'description_of_people': row[11],
-                'detailed_description_for_the_incident': row[12],
-                'accident_type': row[13],
-                'vehicles_machines_involved': row[14],
-                'utility_type': row[15],
-                'extent_of_impact': row[16],
-                'duration': row[17],
-                'illegal_type': row[18],
-                'items_involved': row[19],
-                'detected_events': row[20],
-                'location_id': row[21],
-                'real_files': row[22],
-                'verified': row[23],
-                'address': row[24],
-                'latitude': row[25],
-                'longitude': row[26],
-                'media_files': row[27] if row[27] is not None else [],
-                'device_id': row[28],
-                'user_name': row[29],
-                'national_id': row[30],
-                'is_anonymous': row[30] is None  # If no national_id, user is anonymous
-            })
-        
-        return incidents
-        
+
+        return {
+            'total': row[0],
+            'pending': row[1],
+            'under_review': row[2],
+            'investigating': row[3],
+            'resolved': row[4],
+            'high_severity': row[5],
+            'medium_severity': row[6],
+            'low_severity': row[7]
+        }
+
     except Exception as e:
         if conn:
             conn.close()
-        logger.error(f"Error getting incidents from database: {str(e)}")
-        return []
-
-
-def create_registered_user(national_id: str, full_name: str, contact_info: str, device_id: str) -> Optional[int]:
-    """
-    Create or update a registered user (not anonymous)
-    Links device_id to a real user account
-    
-    Args:
-        national_id: National ID of the user
-        full_name: Full name of the user
-        contact_info: Contact information (phone/email)
-        device_id: Device ID to link
-    
-    Returns:
-        User ID if successful, None otherwise
-    """
-    conn = None
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        
-        # Check if device already has a user
-        cur.execute("SELECT id, national_id FROM app_users WHERE device_id = %s;", (device_id,))
-        result = cur.fetchone()
-        
-        if result:
-            existing_id, existing_national_id = result
-            if existing_national_id is None:
-                # Update anonymous user (device_id only) to registered
-                cur.execute("""
-                    UPDATE app_users 
-                    SET national_id = %s, full_name = %s, contact_info = %s
-                    WHERE id = %s
-                    RETURNING id;
-                """, (national_id, full_name, contact_info, existing_id))
-                user_id = cur.fetchone()[0]
-                logger.info(f"Updated anonymous user to registered: device_id={device_id}, user_id={user_id}")
-            else:
-                # Already registered
-                user_id = existing_id
-                logger.info(f"User already registered: device_id={device_id}, user_id={user_id}")
-        else:
-            # Check if national_id already exists (user registering from new device)
-            cur.execute("SELECT id FROM app_users WHERE national_id = %s;", (national_id,))
-            result = cur.fetchone()
-            
-            if result:
-                # Update existing user with new device_id
-                user_id = result[0]
-                cur.execute("UPDATE app_users SET device_id = %s WHERE id = %s;", (device_id, user_id))
-                logger.info(f"Updated device_id for existing user: user_id={user_id}")
-            else:
-                # Create new registered user
-                cur.execute("""
-                    INSERT INTO app_users (device_id, national_id, full_name, contact_info)
-                    VALUES (%s, %s, %s, %s)
-                    RETURNING id;
-                """, (device_id, national_id, full_name, contact_info))
-                user_id = cur.fetchone()[0]
-                logger.info(f"Created new registered user: device_id={device_id}, user_id={user_id}")
-        
-        conn.commit()
-        cur.close()
-        conn.close()
-        return user_id
-        
-    except Exception as e:
-        if conn:
-            conn.rollback()
-            conn.close()
-        logger.error(f"Error creating registered user: {str(e)}")
-        logger.exception("Full traceback:")
-        return None
-
+        logger.error(f"Error getting incident stats: {str(e)}")
+        return {}

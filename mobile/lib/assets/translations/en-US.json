@@ -1,17 +1,17 @@
 {
-  "app_name": "Safe Egypt",
-  "app_tagline": "Report danger. Save lives.",
-  
+  "app_name": "Site Safety Reporting",
+  "app_tagline": "Report incidents. Ensure workplace safety.",
+
   "onboarding": {
     "back": "Back",
     "next": "Next",
     "skip": "Skip",
     "report_instantly": "Report Instantly",
-    "report_instantly_desc": "Quickly report safety incidents with photos, videos, or audio recordings.",
+    "report_instantly_desc": "Quickly report safety incidents at petroleum and construction sites with photos, videos, or audio recordings.",
     "ai_verifies": "AI Verifies",
-    "ai_verifies_desc": "Our advanced AI system analyzes and verifies reports for accuracy and urgency.",
-    "authorities_respond": "Authorities Respond",
-    "authorities_respond_desc": "Verified incidents are immediately forwarded to relevant emergency services."
+    "ai_verifies_desc": "Our advanced AI system analyzes and verifies incident reports for accuracy and severity.",
+    "authorities_respond": "HSE Team Responds",
+    "authorities_respond_desc": "Verified incidents are immediately forwarded to your site's Health, Safety & Environment team."
   },
   
   "home": {
@@ -130,8 +130,8 @@
   },
   
   "registration": {
-    "title": "Create User Account",
-    "subtitle": "Register a new user for Safe Egypt",
+    "title": "Create Worker Account",
+    "subtitle": "Register for site safety incident reporting",
     "full_name": "Full Name",
     "full_name_hint": "Enter your full name",
     "email": "Email Address",

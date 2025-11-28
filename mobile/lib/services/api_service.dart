@@ -10,6 +10,7 @@ import 'package:safe_egypt_v2/models/incident_data.dart';
 import 'package:safe_egypt_v2/services/media_service.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:image_picker/image_picker.dart';
 
 
 Future<String> getDeviceId() async {
@@ -25,6 +26,7 @@ Future<String> getDeviceId() async {
       return iosInfo.identifierForVendor ?? 'unknown-ios-device';
     }
   } catch (e) {
+    // ignore: avoid_print
     print('Error getting device ID: $e');
   }
   return 'unknown-device-${DateTime.now().millisecondsSinceEpoch}';
@@ -41,15 +43,329 @@ class ApiService {
   
   // Get the appropriate base URL based on platform
   static String get baseUrl {
-    // For physical Android device, use your computer's IP address
-    // Make sure your phone and computer are on the same WiFi network
-    // return 'http://192.168.1.242:8000';
-    return "https://unnacreous-jameson-diacidic.ngrok-free.dev";
-    // Alternative: Use this if you're on a different network
-    // Find your IP with: ipconfig (Windows) or ifconfig (Mac/Linux)
-    // return 'http://YOUR_COMPUTER_IP:8000';
+    // ⚠️ CHANGE THIS BASED ON YOUR DEVICE:
+
+    // Option 1: For Physical Device (iPhone/Android phone)
+    // Use your computer's IP address (both devices must be on same WiFi)
+    //return 'http://192.168.50.123:8000';  // ← Your computer's IP
+
+    // Option 2: For Android Emulator
+    //return 'http://10.0.2.2:8000';
+
+    // Option 3: For iOS Simulator & Web Browser (flutter run -d chrome)
+    //return 'http://localhost:8000';
+
+    // Option 4: For Remote Access via ngrok (CURRENTLY ACTIVE)
+    return "https://leanne-nonduplicative-jenny.ngrok-free.dev";
   }
-  
+
+  // ==================== WORKER AUTHENTICATION ====================
+
+  /// Worker login with company code
+  /// Returns access token and user data on success
+  static Future<Map<String, dynamic>> workerLogin({
+    required String username,
+    required String password,
+    required String companyCode,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/worker/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'username': username,
+          'password': password,
+          'company_code': companyCode,
+        }),
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw Exception('Login timeout - server may be unreachable');
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        return {
+          'status': 'success',
+          'access_token': responseData['access_token'],
+          'token_type': responseData['token_type'],
+          'user': responseData['user'],
+        };
+      } else {
+        final errorData = json.decode(response.body);
+        return {
+          'status': 'error',
+          'message': errorData['detail'] ?? 'Login failed',
+        };
+      }
+    } catch (e) {
+      return {
+        'status': 'error',
+        'message': 'Error during login: $e',
+      };
+    }
+  }
+
+  // ==================== WORKER SITE ENDPOINTS ====================
+
+  /// Get all sites for the authenticated worker's company
+  static Future<Map<String, dynamic>> getWorkerSites(String accessToken) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/worker/sites'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        },
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw Exception('Request timeout - server may be unreachable');
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        return {
+          'status': 'success',
+          'company_id': responseData['company_id'],
+          'company_name': responseData['company_name'],
+          'sites': responseData['sites'],
+        };
+      } else {
+        final errorData = json.decode(response.body);
+        return {
+          'status': 'error',
+          'message': errorData['detail'] ?? 'Failed to fetch sites',
+        };
+      }
+    } catch (e) {
+      return {
+        'status': 'error',
+        'message': 'Error fetching sites: $e',
+      };
+    }
+  }
+
+  /// Get zones for a specific site
+  static Future<Map<String, dynamic>> getSiteZones(
+    String accessToken,
+    int siteId,
+  ) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/worker/sites/$siteId/zones'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        },
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw Exception('Request timeout - server may be unreachable');
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        return {
+          'status': 'success',
+          'site_id': responseData['site_id'],
+          'site_name': responseData['site_name'],
+          'zones': responseData['zones'],
+        };
+      } else {
+        final errorData = json.decode(response.body);
+        return {
+          'status': 'error',
+          'message': errorData['detail'] ?? 'Failed to fetch zones',
+        };
+      }
+    } catch (e) {
+      return {
+        'status': 'error',
+        'message': 'Error fetching zones: $e',
+      };
+    }
+  }
+
+  // ==================== WORKER INCIDENT REPORTING ====================
+
+  /// Report incident at a site (NEW MULTI-TENANT VERSION)
+  static Future<Map<String, dynamic>> reportSiteIncident({
+    required String accessToken,
+    required int siteId,
+    int? zoneId,
+    required double latitude,
+    required double longitude,
+    required String description,
+    required String timestamp,
+    required List<MediaEvidence> mediaFiles,
+  }) async {
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/api/worker/report-incident'),
+      );
+
+      // Add authorization header
+      request.headers['Authorization'] = 'Bearer $accessToken';
+
+      // Add form fields
+      request.fields['site_id'] = siteId.toString();
+      if (zoneId != null) {
+        request.fields['zone_id'] = zoneId.toString();
+      }
+      request.fields['latitude'] = latitude.toString();
+      request.fields['longitude'] = longitude.toString();
+      request.fields['description'] = description;
+      request.fields['timestamp'] = timestamp;
+
+      // Add media files
+      for (int i = 0; i < mediaFiles.length; i++) {
+        final media = mediaFiles[i];
+        final xfile = XFile(media.filePath);
+        final bytes = await xfile.readAsBytes();
+        if (bytes.isEmpty) {
+          continue;
+        }
+
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'file_$i',
+            bytes,
+            filename: media.fileName,
+            contentType: _getMediaType(media.type),
+          ),
+        );
+
+        request.fields['file_${i}_type'] = media.type.toString().split('.').last;
+        request.fields['file_${i}_name'] = media.fileName;
+      }
+
+      var streamedResponse = await request.send().timeout(
+        const Duration(minutes: 5),
+        onTimeout: () {
+          throw Exception('Upload timeout');
+        },
+      );
+
+      final responseBody = await streamedResponse.stream.bytesToString();
+
+      if (streamedResponse.statusCode == 200) {
+        final responseData = json.decode(responseBody);
+        return {
+          'success': true,
+          'status': 'success',
+          'message': responseData['message'] ?? 'Incident reported successfully',
+          'incident_id': responseData['incident_id'],
+          'company_id': responseData['company_id'],
+          'site_id': responseData['site_id'],
+          'site_name': responseData['site_name'],
+        };
+      } else {
+        return {
+          'success': false,
+          'status': 'error',
+          'message': 'Failed to report incident. Status: ${streamedResponse.statusCode}',
+          'error': 'HTTP ${streamedResponse.statusCode}: $responseBody',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'status': 'error',
+        'message': 'Error reporting incident: $e',
+        'error': e.toString(),
+      };
+    }
+  }
+
+  /// Get incidents for the authenticated worker's company
+  static Future<Map<String, dynamic>> getWorkerIncidents(
+    String accessToken, {
+    int limit = 50,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/worker/incidents?limit=$limit'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        },
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw Exception('Request timeout - server may be unreachable');
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        return {
+          'status': 'success',
+          'total_incidents': responseData['total_incidents'],
+          'company_id': responseData['company_id'],
+          'incidents': responseData['incidents'],
+        };
+      } else {
+        final errorData = json.decode(response.body);
+        return {
+          'status': 'error',
+          'message': errorData['detail'] ?? 'Failed to fetch incidents',
+        };
+      }
+    } catch (e) {
+      return {
+        'status': 'error',
+        'message': 'Error fetching incidents: $e',
+      };
+    }
+  }
+
+  /// Get incident detail by ID
+  static Future<Map<String, dynamic>> getWorkerIncidentDetail(
+    String accessToken,
+    String incidentId,
+  ) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/worker/incidents/$incidentId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        },
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw Exception('Request timeout - server may be unreachable');
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        return {
+          'status': 'success',
+          'incident': responseData['incident'],
+        };
+      } else {
+        final errorData = json.decode(response.body);
+        return {
+          'status': 'error',
+          'message': errorData['detail'] ?? 'Failed to fetch incident',
+        };
+      }
+    } catch (e) {
+      return {
+        'status': 'error',
+        'message': 'Error fetching incident: $e',
+      };
+    }
+  }
+
+  // ==================== LEGACY ENDPOINTS (Keep for backward compatibility) ====================
+
   /// Upload media files with location data to the API (Step 6-7 from pseudocode)
   /// Using the working logic from simple_api_test.dart
   /// 
@@ -583,11 +899,14 @@ static Future<Map<String, dynamic>> registerUser({
   }
 
   /// Get formatted incidents from the backend API
-  static Future<Map<String, dynamic>> getFormattedIncidents() async {
+  static Future<Map<String, dynamic>> getFormattedIncidents(String accessToken) async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/api/mobile/incidents/formatted'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        },
       ).timeout(
         const Duration(seconds: 10),
         onTimeout: () {
@@ -634,11 +953,14 @@ static Future<Map<String, dynamic>> registerUser({
   }
 
   /// Get dashboard incidents from the new endpoint
-  static Future<Map<String, dynamic>> getDashboardIncidents() async {
+  static Future<Map<String, dynamic>> getDashboardIncidents(String accessToken) async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/api/mobile/incidents/formatted'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        },
       ).timeout(
         const Duration(seconds: 10),
         onTimeout: () {

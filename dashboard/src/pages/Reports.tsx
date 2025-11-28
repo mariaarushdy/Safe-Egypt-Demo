@@ -3,69 +3,65 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { 
-  Search, 
-  MapPin, 
-  Clock, 
+import {
+  Search,
+  MapPin,
+  Clock,
   Shield,
   Eye,
   CalendarIcon,
   Filter,
   Flame,
   Car,
-  Zap,
-  Users,
-  Heart,
-  AlertTriangle,
-  X
+  Wrench,
+  X,
+  HardHat,
+  FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { ar } from "date-fns/locale";
 import Sidebar from "@/components/Sidebar";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { fetchIncidents, type Incident } from "@/lib/api";
 
-// Category mapping for display
-const getCategoryIcon = (category: string) => {
-  switch (category.toLowerCase()) {
-    case 'violence': return Shield;
-    case 'accidents': return Car;
-    case 'fire': return Flame;
-    case 'medical': return Heart;
-    case 'utility': return Zap;
-    case 'illegal': return Users;
-    default: return AlertTriangle;
-  }
+// Category mapping for display - based on petroleum_type
+const getCategoryIcon = (incident: Incident) => {
+  const type = (incident.petroleum_type || incident.category || '').toLowerCase();
+  if (type.includes('equipment')) return Car;
+  if (type.includes('spill') || type.includes('leak') || type.includes('fire') || type.includes('explosion')) return Flame;
+  if (type.includes('ppe')) return HardHat;
+  if (type.includes('safety') || type.includes('environmental')) return Wrench;
+  return Shield;
 };
 
-// Category colors for visual distinction
-const getCategoryColor = (category: string) => {
-  switch (category.toLowerCase()) {
-    case 'violence': return 'text-red-600 bg-red-50 border-red-200';
-    case 'accidents': return 'text-orange-600 bg-orange-50 border-orange-200';
-    case 'fire': return 'text-red-700 bg-red-100 border-red-300';
-    case 'medical': return 'text-pink-600 bg-pink-50 border-pink-200';
-    case 'utility': return 'text-blue-600 bg-blue-50 border-blue-200';
-    case 'illegal': return 'text-purple-600 bg-purple-50 border-purple-200';
-    default: return 'text-gray-600 bg-gray-50 border-gray-200';
-  }
+// Category colors for visual distinction - based on petroleum_type
+const getCategoryColor = (incident: Incident) => {
+  const type = (incident.petroleum_type || incident.category || '').toLowerCase();
+  if (type.includes('equipment')) return 'text-slate-700 bg-slate-100 border-slate-300';
+  if (type.includes('spill') || type.includes('leak') || type.includes('fire') || type.includes('explosion')) return 'text-orange-700 bg-orange-100 border-orange-300';
+  if (type.includes('ppe')) return 'text-amber-700 bg-amber-100 border-amber-300';
+  if (type.includes('safety')) return 'text-blue-700 bg-blue-100 border-blue-300';
+  if (type.includes('environmental')) return 'text-green-700 bg-green-100 border-green-300';
+  return 'text-gray-600 bg-gray-50 border-gray-200';
 };
 
-// Get localized incident types and status options
-const getIncidentTypes = (t: (key: string) => string) => [
-  t('reports.allCategories'),
-  t('reports.violence'),
-  t('reports.accidents'),
-  t('reports.fire'),
-  t('reports.medical'),
-  t('reports.utility'),
-  t('reports.illegal')
+// Get petroleum incident types for filter dropdown
+const getIncidentTypes = () => [
+  { value: 'all', label: 'All Categories' },
+  { value: 'equipment damage', label: 'Equipment Damage' },
+  { value: 'spill/leak', label: 'Spill/Leak' },
+  { value: 'PPE violation', label: 'PPE Violation' },
+  { value: 'safety violation', label: 'Safety Violation' },
+  { value: 'fire/explosion', label: 'Fire/Explosion' },
+  { value: 'environmental hazard', label: 'Environmental Hazard' },
+  { value: 'confined space incident', label: 'Confined Space' },
+  { value: 'pressure vessel incident', label: 'Pressure Vessel' },
+  { value: 'gas release', label: 'Gas Release' },
+  { value: 'chemical exposure', label: 'Chemical Exposure' }
 ];
 
 const getStatusOptions = (t: (key: string) => string) => [
@@ -75,17 +71,25 @@ const getStatusOptions = (t: (key: string) => string) => [
   t('reports.rejected')
 ];
 
-// Map English categories to localized ones
-const mapCategoryToLocal = (category: string, t: (key: string) => string) => {
-  switch (category.toLowerCase()) {
-    case 'violence': return t('reports.violence');
-    case 'accidents': return t('reports.accidents');
-    case 'fire': return t('reports.fire');
-    case 'medical': return t('reports.medical');
-    case 'utility': return t('reports.utility');
-    case 'illegal': return t('reports.illegal');
-    default: return category;
-  }
+// Map petroleum_type to display name
+const mapCategoryToLocal = (incident: Incident) => {
+  const type = incident.petroleum_type || incident.category;
+  if (!type) return 'Unknown';
+
+  const typeMap: Record<string, string> = {
+    'equipment damage': 'Equipment Damage',
+    'spill/leak': 'Spill/Leak',
+    'ppe violation': 'PPE Violation',
+    'safety violation': 'Safety Violation',
+    'environmental hazard': 'Environmental Hazard',
+    'fire/explosion': 'Fire/Explosion',
+    'confined space incident': 'Confined Space',
+    'pressure vessel incident': 'Pressure Vessel',
+    'gas release': 'Gas Release',
+    'chemical exposure': 'Chemical Exposure'
+  };
+
+  return typeMap[type.toLowerCase()] || type;
 };
 
 // Map English status to localized ones
@@ -94,6 +98,8 @@ const mapStatusToLocal = (status: string, t: (key: string) => string) => {
     case 'pending': return t('reports.pending');
     case 'accepted': return t('reports.accepted');
     case 'rejected': return t('reports.rejected');
+    case 'resolved': return t('reports.resolved');
+    case 'reviewed': return t('reports.reviewed');
     default: return status;
   }
 };
@@ -126,26 +132,38 @@ const Reports = () => {
   // Initialize filters with localized default values
   const [statusFilter, setStatusFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
+  const [siteFilter, setSiteFilter] = useState("");
   
-  // Get localized options
-  const incidentTypes = getIncidentTypes(t);
+  // Get petroleum types and status options
+  const incidentTypes = getIncidentTypes();
   const statusOptions = getStatusOptions(t);
-  
+
   // Set default filter values after translations are loaded
   React.useEffect(() => {
     if (!statusFilter) {
       setStatusFilter(t('reports.allStatuses'));
     }
     if (!typeFilter) {
-      setTypeFilter(t('reports.allCategories'));
+      setTypeFilter('all');
     }
-  }, [t, statusFilter, typeFilter]);
+    if (!siteFilter) {
+      setSiteFilter(t('reports.allSites'));
+    }
+  }, [t, statusFilter, typeFilter, siteFilter]);
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
-  const [dateTo, setDateTo] = useState<Date | undefined>();
   const [selectedIncident, setSelectedIncident] = useState<string | null>(null);
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const siteOptions = Array.from(
+    new Map(
+      incidents.map((incident) => {
+        const value = incident.site_id ? String(incident.site_id) : (incident.site_name || incident.site_code || '');
+        const label = incident.site_name || incident.site_code || incident.site_address || 'Site';
+        return [value || label, { value: value || label, label }];
+      })
+    ).values()
+  ).filter(option => option.value);
 
   // Fetch incidents from API
   useEffect(() => {
@@ -230,28 +248,32 @@ const Reports = () => {
   const filteredIncidents = incidents.filter(incident => {
     // Search functionality - if no search term, show all
     const matchesSearch = !debouncedSearchTerm.trim() || 
-      incident.incident_id.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-      incident.category.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-      incident.title.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-      incident.location.address.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
+      (incident.incident_id || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      (incident.category || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      (incident.title || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      (incident.location?.address || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      (incident.site_name || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase());
     
     // Status filter - check against both English and localized values
     const matchesStatus = 
       statusFilter === t('reports.allStatuses') || 
       statusFilter === t('reports.allStatuses') || 
       !statusFilter ||
-      incident.status.toLowerCase() === statusFilter.toLowerCase() ||
-      mapStatusToLocal(incident.status, t).toLowerCase() === statusFilter.toLowerCase();
+      (incident.status || '').toLowerCase() === statusFilter.toLowerCase() ||
+      mapStatusToLocal(incident.status || '', t).toLowerCase() === statusFilter.toLowerCase();
     
-    // Type filter - check against both English and localized values  
-    const matchesType = 
-      typeFilter === t('reports.allCategories') || 
-      typeFilter === t('reports.allCategories') || 
+    // Type filter - check against petroleum_type
+    const matchesType =
+      typeFilter === 'all' ||
       !typeFilter ||
-      incident.category.toLowerCase() === typeFilter.toLowerCase() ||
-      mapCategoryToLocal(incident.category, t).toLowerCase() === typeFilter.toLowerCase();
+      (incident.petroleum_type || incident.category || '').toLowerCase() === typeFilter.toLowerCase();
+
+    const matchesSite =
+      siteFilter === t('reports.allSites') ||
+      !siteFilter ||
+      siteFilter === (incident.site_id ? String(incident.site_id) : incident.site_name || incident.site_code || '');
     
-    return matchesSearch && matchesStatus && matchesType;
+    return matchesSearch && matchesStatus && matchesType && matchesSite;
   });
 
 
@@ -265,8 +287,8 @@ const Reports = () => {
     setDebouncedSearchTerm("");
     setStatusFilter(t('reports.allStatuses'));
     setTypeFilter(t('reports.allCategories'));
+    setSiteFilter(t('reports.allSites'));
     setDateFrom(undefined);
-    setDateTo(undefined);
   };
 
   return (
@@ -275,13 +297,17 @@ const Reports = () => {
       
       <div className="flex-1 flex flex-col">
         {/* Header */}
-        <header className="bg-card border-b border-border p-6">
-          <div className="flex items-center justify-between">
+        <header className="bg-gradient-to-r from-card to-card-accent border-b border-[hsl(215,20%,35%)] p-6 shadow-md relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-[hsl(20,100%,63%)]/5 to-transparent pointer-events-none" />
+          <div className="flex items-center justify-between relative">
             <div>
-              <h1 className="text-3xl font-bold text-card-foreground">
+              <h1 className="text-3xl font-bold text-card-foreground flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[hsl(20,100%,63%)] to-[hsl(22,96%,62%)] flex items-center justify-center shadow-lg shadow-[hsl(20,100%,63%)]/30">
+                  <FileText className="h-5 w-5 text-white" />
+                </div>
                 {t('reports.title')}
               </h1>
-              <p className="text-muted-foreground mt-1">
+              <p className="text-[hsl(214,20%,76%)] mt-2 ml-13">
                 {t('reports.subtitle')}
               </p>
             </div>
@@ -291,15 +317,17 @@ const Reports = () => {
         {/* Main Content */}
         <main className="flex-1 p-6 space-y-6">
           {/* Filters Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Filter className="h-5 w-5" />
+          <Card className="border-[hsl(215,20%,35%)] shadow-lg">
+            <CardHeader className="bg-card-accent/50">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[hsl(20,100%,63%)]/20 to-[hsl(22,96%,62%)]/10 flex items-center justify-center border border-[hsl(20,100%,63%)]/30">
+                  <Filter className="h-4 w-4 text-[hsl(20,100%,63%)]" />
+                </div>
                 {t('reports.advancedFilters')}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 {/* Search Bar */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium">{t('reports.search')}</label>
@@ -347,7 +375,23 @@ const Reports = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {incidentTypes.map(type => (
-                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                        <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Site Filter */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">{t('reports.site')}</label>
+                  <Select value={siteFilter} onValueChange={setSiteFilter}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={t('reports.allSites')}>{t('reports.allSites')}</SelectItem>
+                      {siteOptions.map(site => (
+                        <SelectItem key={site.value} value={site.value}>{site.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -397,12 +441,12 @@ const Reports = () => {
                     </p>
                   )}
                 </div>
-                {(searchTerm || statusFilter !== t('reports.allStatuses') || typeFilter !== t('reports.allCategories') || dateFrom) && (
+                {(searchTerm || statusFilter !== t('reports.allStatuses') || typeFilter !== t('reports.allCategories') || siteFilter !== t('reports.allSites') || dateFrom) && (
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={resetFilters}
-                    className="gap-2"
+                    className="gap-2 border-[hsl(20,100%,63%)]/50 text-[hsl(20,100%,63%)] hover:bg-[hsl(20,100%,63%)]/10 hover:border-[hsl(20,100%,63%)] transition-all"
                   >
                     <X className="h-3 w-3" />
                     {t('reports.resetFilters')}
@@ -413,21 +457,21 @@ const Reports = () => {
           </Card>
 
           {/* Reports Table */}
-          <Card>
+          <Card className="border-[hsl(215,20%,35%)] shadow-lg">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-border">
-                      <TableHead className="text-left">{t('reports.reportNumber')}</TableHead>
-                      <TableHead className="text-left">{t('reports.type')}</TableHead>
-                      <TableHead className="text-left">{t('reports.titleHeader')}</TableHead>
-                      <TableHead className="text-left">{t('reports.location')}</TableHead>
-                      <TableHead className="text-left">{t('reports.status')}</TableHead>
-                      <TableHead className="text-left">{t('reports.severity')}</TableHead>
-                      <TableHead className="text-left">{t('reports.verified')}</TableHead>
-                      <TableHead className="text-left">{t('reports.time')}</TableHead>
-                      <TableHead className="text-left">{t('reports.actions')}</TableHead>
+                    <TableRow className="border-[hsl(215,20%,35%)] bg-card-accent/50">
+                      <TableHead className="text-left font-bold text-[hsl(214,20%,76%)]">{t('reports.reportNumber')}</TableHead>
+                      <TableHead className="text-left font-bold text-[hsl(214,20%,76%)]">{t('reports.type')}</TableHead>
+                      <TableHead className="text-left font-bold text-[hsl(214,20%,76%)]">{t('reports.titleHeader')}</TableHead>
+                      <TableHead className="text-left font-bold text-[hsl(214,20%,76%)]">{t('reports.location')}</TableHead>
+                      <TableHead className="text-left font-bold text-[hsl(214,20%,76%)]">{t('reports.status')}</TableHead>
+                      <TableHead className="text-left font-bold text-[hsl(214,20%,76%)]">{t('reports.severity')}</TableHead>
+                      <TableHead className="text-left font-bold text-[hsl(214,20%,76%)]">{t('reports.verified')}</TableHead>
+                      <TableHead className="text-left font-bold text-[hsl(214,20%,76%)]">{t('reports.time')}</TableHead>
+                      <TableHead className="text-left font-bold text-[hsl(214,20%,76%)]">{t('reports.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -451,13 +495,14 @@ const Reports = () => {
                       </TableRow>
                     ) : (
                       filteredIncidents.map((incident) => {
-                        const CategoryIcon = getCategoryIcon(incident.category);
+                        const CategoryIcon = getCategoryIcon(incident);
                         return (
-                          <TableRow 
+                          <TableRow
                             key={incident.incident_id}
                             className={cn(
-                              "border-border cursor-pointer hover:bg-card-accent transition-colors",
-                              selectedIncident === incident.incident_id && "bg-card-accent"
+                              "border-[hsl(215,20%,35%)] cursor-pointer transition-all duration-200",
+                              "hover:bg-card-accent/70 hover:shadow-md",
+                              selectedIncident === incident.incident_id && "bg-card-accent/70 border-l-4 border-l-[hsl(20,100%,63%)]"
                             )}
                             onClick={() => navigate(`/incident/${incident.incident_id}`)}
                           >
@@ -465,9 +510,9 @@ const Reports = () => {
                               {incident.incident_id.substring(0, 8)}...
                             </TableCell>
                             <TableCell>
-                              <div className={`flex items-center gap-2 px-2 py-1 rounded-md border ${getCategoryColor(incident.category)}`}>
+                              <div className={`flex items-center gap-2 px-2 py-1 rounded-md border ${getCategoryColor(incident)}`}>
                                 <CategoryIcon className="h-4 w-4" />
-                                <span className="font-medium">{mapCategoryToLocal(incident.category, t)}</span>
+                                <span className="font-medium">{mapCategoryToLocal(incident)}</span>
                               </div>
                             </TableCell>
                             <TableCell className="max-w-[200px]">
@@ -510,13 +555,13 @@ const Reports = () => {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="gap-2"
+                                className="gap-2 border-[hsl(20,100%,63%)]/50 text-[hsl(20,100%,63%)] hover:bg-gradient-to-r hover:from-[hsl(20,100%,63%)] hover:to-[hsl(22,96%,62%)] hover:text-white hover:border-transparent transition-all shadow-sm hover:shadow-md"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   navigate(`/incident/${incident.incident_id}`);
                                 }}
                               >
-                                <Eye className="h-3 w-3" />
+                                <Eye className="h-3.5 w-3.5" />
                                 {t('reports.view')}
                               </Button>
                             </TableCell>

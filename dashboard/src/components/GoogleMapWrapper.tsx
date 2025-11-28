@@ -106,9 +106,13 @@ const MapComponent: React.FC<{
   }, [ref, map]);
 
   useEffect(() => {
-    if (!map || !incidents.length) return;
+    if (!map || !incidents.length) {
+      console.log('Map or incidents not ready:', { map: !!map, incidentsLength: incidents.length });
+      return;
+    }
 
     console.log('Adding markers for incidents:', incidents.length);
+    console.log('First incident location:', incidents[0]?.location);
     
     // Clear existing markers and info windows
     markers.forEach(marker => marker.setMap(null));
@@ -233,13 +237,27 @@ const MapComponent: React.FC<{
           lng: incident.location.longitude
         });
       });
-      map.fitBounds(bounds);
-      
-      // Ensure minimum zoom
-      const listener = google.maps.event.addListener(map, 'idle', () => {
-        if (map.getZoom()! > 15) map.setZoom(15);
-        google.maps.event.removeListener(listener);
-      });
+
+      console.log('Fitting map to bounds:', bounds.toJSON());
+
+      // For a single incident, center and zoom directly
+      if (incidents.length === 1) {
+        map.setCenter({
+          lat: incidents[0].location.latitude,
+          lng: incidents[0].location.longitude
+        });
+        map.setZoom(14);
+        console.log('Single incident - centered at:', incidents[0].location);
+      } else {
+        // Multiple incidents - fit bounds with padding
+        map.fitBounds(bounds, { top: 50, bottom: 50, left: 50, right: 50 });
+
+        // Ensure minimum zoom
+        const listener = google.maps.event.addListener(map, 'idle', () => {
+          if (map.getZoom()! > 15) map.setZoom(15);
+          google.maps.event.removeListener(listener);
+        });
+      }
     }
   }, [map, incidents]);
 

@@ -16,7 +16,7 @@ import json
 import os
 import logging
 from datetime import datetime, timedelta
-from models.db_helper import get_all_incidents_from_db, update_incident_status
+from models.db_helper import get_all_incidents_from_db, get_incident_by_id, update_incident_status
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +40,8 @@ def get_incidents_summary_service() -> Dict[str, Any]:
         incidents_summary = []
         for incident in incidents_data:
             incident_summary = {
-                "category": incident.get("category", "Unknown"),
+                "category": incident.get("petroleum_type") or incident.get("category", "Unknown"),
+                "petroleum_type": incident.get("petroleum_type", "Unknown"),
                 "title": incident.get("title", "Untitled Incident"),
                 "description": incident.get("description", "No description available"),
                 "severity": incident.get("severity", "Unknown"),
@@ -48,6 +49,7 @@ def get_incidents_summary_service() -> Dict[str, Any]:
                 "incident_id": incident.get("incident_id", ""),
                 "timestamp": incident.get("timestamp", ""),
                 "status": incident.get("status", "pending"),
+                "site_type": incident.get("site_type", "petroleum"),
                 "location": {
                     "address": incident.get("address", "Unknown location"),
                     "latitude": incident.get("latitude", 0.0),
@@ -118,10 +120,10 @@ def get_reports_service(
 
 def manage_users_service() -> Dict[str, Any]:
     """
-    Get user management data
-    
+    Get user management data (Multi-tenant system)
+
     Returns:
-        Dict containing user data
+        Dict containing user data across all companies
     """
     from models.db_helper import get_db_connection
 
@@ -129,40 +131,42 @@ def manage_users_service() -> Dict[str, Any]:
         conn = get_db_connection()
         cur = conn.cursor()
 
-        # Dashboard users
-        cur.execute("SELECT COUNT(*) FROM dashboard_users;")
-        total_dashboard = cur.fetchone()[0] or 0
+        # HSE users (dashboard users)
+        cur.execute("SELECT COUNT(*) FROM hse_users;")
+        total_hse = cur.fetchone()[0] or 0
 
-        cur.execute("SELECT COUNT(*) FROM dashboard_users WHERE is_active = TRUE;")
-        active_dashboard = cur.fetchone()[0] or 0
+        cur.execute("SELECT COUNT(*) FROM hse_users WHERE is_active = TRUE;")
+        active_hse = cur.fetchone()[0] or 0
 
-        # App users (mobile profiles)
-        cur.execute("SELECT COUNT(*) FROM app_users;")
-        total_app = cur.fetchone()[0] or 0
+        # Workers (site workers)
+        cur.execute("SELECT COUNT(*) FROM workers;")
+        total_workers = cur.fetchone()[0] or 0
 
-        # Registered app users (have national_id) vs anonymous
-        cur.execute("SELECT COUNT(*) FROM app_users WHERE national_id IS NOT NULL;")
-        registered_app = cur.fetchone()[0] or 0
-
-        anonymous_app = total_app - registered_app
+        # Active workers
+        cur.execute("SELECT COUNT(*) FROM workers WHERE is_active = TRUE;")
+        active_workers = cur.fetchone()[0] or 0
 
         # Combined totals
-        combined_total = total_dashboard + total_app
+        combined_total = total_hse + total_workers
 
-        # Get dashboard users list
+        # Get HSE users list with company info
         cur.execute("""
-            SELECT id, username, full_name, is_active, last_login, created_at
-            FROM dashboard_users
-            ORDER BY created_at DESC;
+            SELECT h.id, h.username, h.full_name, h.is_active, h.last_login, h.created_at,
+                   c.company_name, c.company_code
+            FROM hse_users h
+            JOIN companies c ON h.company_id = c.id
+            ORDER BY h.created_at DESC;
         """)
-        dashboard_users = [
+        hse_users = [
             {
                 "id": row[0],
                 "username": row[1],
                 "full_name": row[2],
                 "is_active": row[3],
                 "last_login": row[4].isoformat() if row[4] else None,
-                "created_at": row[5].isoformat() if row[5] else None
+                "created_at": row[5].isoformat() if row[5] else None,
+                "company_name": row[6],
+                "company_code": row[7]
             }
             for row in cur.fetchall()
         ]
@@ -173,13 +177,13 @@ def manage_users_service() -> Dict[str, Any]:
         return {
             "status": "success",
             "message": "User management summary retrieved",
-            "total_dashboard_users": total_dashboard,
-            "active_dashboard_users": active_dashboard,
-            "total_app_users": total_app,
-            "registered_app_users": registered_app,
-            "anonymous_app_users": anonymous_app,
+            "total_dashboard_users": total_hse,  # Keep key names for backward compatibility
+            "active_dashboard_users": active_hse,
+            "total_app_users": total_workers,
+            "registered_app_users": active_workers,
+            "anonymous_app_users": 0,  # No anonymous users in new system
             "total_users": combined_total,
-            "dashboard_users": dashboard_users
+            "dashboard_users": hse_users
         }
     except Exception as e:
         logger.error(f"Error in manage_users_service: {str(e)}", exc_info=True)
@@ -201,13 +205,13 @@ def get_system_status_service() -> Dict[str, Any]:
     
 def edit_dashboard_user_service(user_id: int, full_name: Optional[str], password: Optional[str]) -> Dict[str, Any]:
     """
-    Edit a dashboard user's details
-    
+    Edit an HSE user's details
+
     Args:
         user_id: ID of the user to edit
         full_name: New full name (optional)
         password: New password (optional)
-        
+
     Returns:
         Dict containing operation status
     """
@@ -219,7 +223,7 @@ def edit_dashboard_user_service(user_id: int, full_name: Optional[str], password
         cur = conn.cursor()
 
         # Check if user exists
-        cur.execute("SELECT id FROM dashboard_users WHERE id = %s;", (user_id,))
+        cur.execute("SELECT id FROM hse_users WHERE id = %s;", (user_id,))
         if not cur.fetchone():
             cur.close()
             conn.close()
@@ -231,11 +235,11 @@ def edit_dashboard_user_service(user_id: int, full_name: Optional[str], password
         # Build update query dynamically based on provided fields
         update_parts = []
         params = []
-        
+
         if full_name is not None:
             update_parts.append("full_name = %s")
             params.append(full_name)
-            
+
         if password is not None:
             update_parts.append("password_hash = %s")
             # Hash the new password
@@ -252,10 +256,10 @@ def edit_dashboard_user_service(user_id: int, full_name: Optional[str], password
             }
 
         # Construct and execute update query
-        query = f"UPDATE dashboard_users SET {', '.join(update_parts)} WHERE id = %s"
+        query = f"UPDATE hse_users SET {', '.join(update_parts)} WHERE id = %s"
         params.append(user_id)
         cur.execute(query, params)
-        
+
         conn.commit()
         cur.close()
         conn.close()
@@ -264,7 +268,7 @@ def edit_dashboard_user_service(user_id: int, full_name: Optional[str], password
             "status": "success",
             "message": "User updated successfully"
         }
-        
+
     except Exception as e:
         logger.error(f"Error in edit_dashboard_user_service: {str(e)}", exc_info=True)
         return {
@@ -274,11 +278,11 @@ def edit_dashboard_user_service(user_id: int, full_name: Optional[str], password
 
 def delete_dashboard_user_service(user_id: int) -> Dict[str, Any]:
     """
-    Delete a dashboard user
-    
+    Delete an HSE user
+
     Args:
         user_id: ID of the user to delete
-        
+
     Returns:
         Dict containing operation status
     """
@@ -289,7 +293,7 @@ def delete_dashboard_user_service(user_id: int) -> Dict[str, Any]:
         cur = conn.cursor()
 
         # Check if user exists
-        cur.execute("SELECT id FROM dashboard_users WHERE id = %s;", (user_id,))
+        cur.execute("SELECT id FROM hse_users WHERE id = %s;", (user_id,))
         if not cur.fetchone():
             cur.close()
             conn.close()
@@ -299,8 +303,8 @@ def delete_dashboard_user_service(user_id: int) -> Dict[str, Any]:
             }
 
         # Delete the user
-        cur.execute("DELETE FROM dashboard_users WHERE id = %s;", (user_id,))
-        
+        cur.execute("DELETE FROM hse_users WHERE id = %s;", (user_id,))
+
         conn.commit()
         cur.close()
         conn.close()
@@ -309,7 +313,7 @@ def delete_dashboard_user_service(user_id: int) -> Dict[str, Any]:
             "status": "success",
             "message": "User deleted successfully"
         }
-        
+
     except Exception as e:
         logger.error(f"Error in delete_dashboard_user_service: {str(e)}", exc_info=True)
         return {
@@ -369,35 +373,36 @@ def import_data_service(
     }
 
 
-def get_incident_by_id_service(incident_id: str) -> Dict[str, Any]:
+def get_incident_by_id_service(incident_id: str, company_id: int) -> Dict[str, Any]:
     """
-    Get detailed incident information by ID from database
-    
+    Get detailed incident information by ID from database with company validation
+
     Args:
         incident_id: The unique incident identifier
-        
+        company_id: The company ID for multi-tenant validation
+
     Returns:
         Dict containing complete incident information including
         category, title, severity, detected events, location, and all other analysis results
     """
     try:
-        # Get all incidents from database (we'll filter for the one we need)
-        all_incidents = get_all_incidents_from_db()
-        
-        # Find the specific incident
-        found_incident = None
-        for incident in all_incidents:
-            if incident.get("incident_id") == incident_id:
-                found_incident = incident
-                break
-        
+        # Get incident by ID with company validation (multi-tenant security)
+        found_incident = get_incident_by_id(incident_id, company_id)
+
         if not found_incident:
-            raise HTTPException(status_code=404, detail=f"Incident with ID {incident_id} not found")
+            raise HTTPException(status_code=404, detail=f"Incident with ID {incident_id} not found or access denied")
         
+        # Extract media files and map to real_files for backward compatibility
+        media_files = found_incident.get("media_files", [])
+        real_files = [media["file_path"] for media in media_files] if media_files else []
+
         # Build the incident_info object with location nested properly
         incident_info = {
             "incident_id": found_incident.get("incident_id"),
-            "category": found_incident.get("category"),
+            "category": found_incident.get("petroleum_type") or found_incident.get("category"),
+            "petroleum_type": found_incident.get("petroleum_type"),
+            "construction_type": found_incident.get("construction_type"),
+            "site_type": found_incident.get("site_type", "petroleum"),
             "title": found_incident.get("title"),
             "description": found_incident.get("description"),
             "severity": found_incident.get("severity"),
@@ -417,10 +422,16 @@ def get_incident_by_id_service(incident_id: str) -> Dict[str, Any]:
             "duration": found_incident.get("duration"),
             "illegal_type": found_incident.get("illegal_type"),
             "items_involved": found_incident.get("items_involved"),
+            "substance_involved": found_incident.get("substance_involved"),
+            "equipment_id": found_incident.get("equipment_id"),
+            "spill_volume": found_incident.get("spill_volume"),
+            "environmental_impact": found_incident.get("environmental_impact"),
+            "ppe_missing": found_incident.get("ppe_missing", []),
             "detected_events": found_incident.get("detected_events", []),
-            "real_files": found_incident.get("real_files", []),
+            "real_files": real_files,
+            "media_files": media_files,  # Include media files array as well
             "location": {
-                "address": found_incident.get("address"),
+                "address": found_incident.get("site_address"),  # Fixed: use site_address from join
                 "latitude": found_incident.get("latitude"),
                 "longitude": found_incident.get("longitude")
             }
@@ -442,33 +453,33 @@ def get_incident_by_id_service(incident_id: str) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=f"Error retrieving incident: {str(e)}")
 
 
-def update_incident_status_service(incident_id: str, status: str) -> Dict[str, Any]:
+def update_incident_status_service(incident_id: str, status: str, company_id: int) -> Dict[str, Any]:
     """
-    Update incident status to accepted or rejected
-    
+    Update incident status to accepted or rejected with company validation
+
     Args:
         incident_id: The unique incident identifier
         status: New status (accepted or rejected)
-        
+        company_id: The company ID for multi-tenant validation
+
     Returns:
         Dict containing success message and updated incident info
     """
     try:
+        # First verify the incident exists and belongs to the company
+        incident = get_incident_by_id(incident_id, company_id)
+        if not incident:
+            raise HTTPException(status_code=404, detail=f"Incident with ID {incident_id} not found or access denied")
+
         # Update status in database
-        success = update_incident_status(incident_id, status)
-        
+        success = update_incident_status(incident_id, company_id, status)
+
         if not success:
             raise HTTPException(status_code=500, detail=f"Failed to update incident status in database")
-        
+
         # Get the updated incident to return its info
-        all_incidents = get_all_incidents_from_db()
-        updated_incident = None
-        
-        for incident in all_incidents:
-            if incident.get("incident_id") == incident_id:
-                updated_incident = incident
-                break
-        
+        updated_incident = get_incident_by_id(incident_id, company_id)
+
         if not updated_incident:
             raise HTTPException(status_code=404, detail=f"Incident with ID {incident_id} not found")
         
@@ -493,33 +504,39 @@ def update_incident_status_service(incident_id: str, status: str) -> Dict[str, A
         raise HTTPException(status_code=500, detail=f"Error updating incident status: {str(e)}")
 
 # --- User creation service ---
-def create_dashboard_user_service(username: str, full_name: str, password: str) -> dict:
+def create_dashboard_user_service(username: str, full_name: str, password: str, company_id: int = 1) -> dict:
     """
-    Create a new dashboard user in the database.
+    Create a new HSE user in the database (Multi-tenant system)
     Returns a dict with status and message.
+
+    Note: company_id defaults to 1 for backward compatibility, but should be provided
     """
     from models.db_helper import get_db_connection
     import bcrypt
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        # Check if username already exists
-        cur.execute("SELECT id FROM dashboard_users WHERE username = %s;", (username,))
+
+        # Check if username already exists for this company
+        cur.execute(
+            "SELECT id FROM hse_users WHERE username = %s AND company_id = %s;",
+            (username, company_id)
+        )
         if cur.fetchone():
             cur.close()
             conn.close()
-            return {"status": "error", "message": "Username already exists."}
+            return {"status": "error", "message": "Username already exists for this company."}
 
         # Hash the password using bcrypt
         salt = bcrypt.gensalt()
         password_hash = bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
         cur.execute(
             """
-            INSERT INTO dashboard_users (username, full_name, password_hash, is_active, created_at)
-            VALUES (%s, %s, %s, TRUE, NOW())
+            INSERT INTO hse_users (company_id, username, full_name, password_hash, role, is_active, created_at)
+            VALUES (%s, %s, %s, %s, 'HSE Manager', TRUE, NOW())
             RETURNING id;
             """,
-            (username, full_name, password_hash)
+            (company_id, username, full_name, password_hash)
         )
         user_id = cur.fetchone()[0]
         conn.commit()
@@ -527,5 +544,5 @@ def create_dashboard_user_service(username: str, full_name: str, password: str) 
         conn.close()
         return {"status": "success", "message": "User created successfully.", "user_id": user_id}
     except Exception as e:
-        logger.error(f"Error creating dashboard user: {str(e)}", exc_info=True)
+        logger.error(f"Error creating HSE user: {str(e)}", exc_info=True)
         return {"status": "error", "message": f"Failed to create user: {str(e)}"}

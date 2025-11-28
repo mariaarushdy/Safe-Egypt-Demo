@@ -3,20 +3,29 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:safe_egypt_v2/pages/report_incident_screen.dart';
 import 'package:safe_egypt_v2/pages/notifications_alerts_page.dart';
-import 'package:safe_egypt_v2/pages/registration.dart';
+import 'package:safe_egypt_v2/pages/site_selection_page.dart';
 import 'package:safe_egypt_v2/services/location_service.dart';
 import 'package:safe_egypt_v2/services/api_service.dart';
+import 'package:safe_egypt_v2/theme/app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final String? accessToken;
+  final Map<String, dynamic>? userData;
+  final Map<String, dynamic>? selectedSite;
+
+  const HomePage({
+    super.key,
+    this.accessToken,
+    this.userData,
+    this.selectedSite,
+  });
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  bool isMapView = true;
   GoogleMapController? mapController;
   
   // Location variables
@@ -32,6 +41,7 @@ class _HomePageState extends State<HomePage> {
   // Location-based filtering
   String? _userCity;
   bool _showAllCities = false;
+  // ignore: unused_field
   bool _isLoadingUserLocation = false;
   
   // Cairo coordinates as fallback
@@ -127,9 +137,24 @@ class _HomePageState extends State<HomePage> {
         _isLoadingIncidents = true;
         _incidentsError = null;
       });
-      
-      final result = await ApiService.getDashboardIncidents();
-      
+
+      // Get access token from widget or SharedPreferences
+      String? accessToken = widget.accessToken;
+      if (accessToken == null || accessToken.isEmpty) {
+        final prefs = await SharedPreferences.getInstance();
+        accessToken = prefs.getString('access_token');
+      }
+
+      if (accessToken == null || accessToken.isEmpty) {
+        setState(() {
+          _incidentsError = 'Not authenticated';
+          _isLoadingIncidents = false;
+        });
+        return;
+      }
+
+      final result = await ApiService.getDashboardIncidents(accessToken);
+
       if (result['success']) {
         setState(() {
           _allIncidents = _processDashboardIncidents(result['incidents']);
@@ -221,16 +246,13 @@ class _HomePageState extends State<HomePage> {
           icon = Icons.warning;
       }
       
-      // Create LatLng from position coordinates
+      // Create LatLng from incident coordinates
       LatLng position = _cairoCenter; // Default fallback
-      if (incident['position'] != null) {
-        final positionData = incident['position'];
-        if (positionData['latitude'] != null && positionData['longitude'] != null) {
-          position = LatLng(
-            double.tryParse(positionData['latitude'].toString()) ?? _cairoCenter.latitude,
-            double.tryParse(positionData['longitude'].toString()) ?? _cairoCenter.longitude,
-          );
-        }
+      if (incident['latitude'] != null && incident['longitude'] != null) {
+        position = LatLng(
+          double.tryParse(incident['latitude'].toString()) ?? _cairoCenter.latitude,
+          double.tryParse(incident['longitude'].toString()) ?? _cairoCenter.longitude,
+        );
       }
       
       return {
@@ -372,6 +394,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   /// Toggle show all cities filter
+  // ignore: unused_element
   void _toggleShowAllCities() {
     setState(() {
       _showAllCities = !_showAllCities;
@@ -383,20 +406,29 @@ class _HomePageState extends State<HomePage> {
 
   /// Apply location-based filtering to incidents
   List<Map<String, dynamic>> _applyLocationFiltering(List<Map<String, dynamic>> incidents) {
+    // ALWAYS show all incidents by default for now
+    // Location filtering is disabled because:
+    // 1. Incidents might not have detailed location data
+    // 2. Strict city matching can hide valid incidents
+    // TODO: Implement distance-based filtering using lat/lng instead
+    return incidents;
+
+    /* Original location filtering (disabled)
     if (_showAllCities || _userCity == null) {
       return incidents; // Show all incidents
     }
-    
+
     final userCityKeywords = _extractCityKeywords(_userCity!);
     if (userCityKeywords.isEmpty) {
       return incidents; // No filtering if no city keywords found
     }
-    
+
     // Filter to show only incidents from user's city
     return incidents.where((incident) {
       final incidentLocation = incident['location']?.toString().toLowerCase() ?? '';
       return userCityKeywords.any((keyword) => incidentLocation.contains(keyword));
     }).toList();
+    */
   }
 
   /// Extract city keywords from location string for filtering
@@ -465,89 +497,95 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            _buildViewToggle(),
-            _buildLocationStatusIndicator(),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    SizedBox(
-                      height: isMapView ? 300 : null,
-                      child: isMapView ? _buildMapView() : _buildListView(),
-                    ),
-                    _buildRecentAlerts(),
-                    _buildReportButton(),
-                  ],
-                ),
+      backgroundColor: AppColors.primaryDark,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: AppColors.primaryGradient,
+        ),
+        child: SafeArea(
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  _buildSiteHeader(),
+                  SizedBox(
+                    height: 350, // Made map bigger
+                    child: _buildMapView(),
+                  ),
+                  Expanded(
+                    child: _buildRecentAlerts(),
+                  ),
+                ],
               ),
-            ),
-          ],
+              // Fixed report button at bottom
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: _buildReportButton(),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildHeader() {
-    return Container(
-      height: 60,
-      decoration: const BoxDecoration(
-        color: Color(0xFF1E3FA3),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(20),
-          bottomRight: Radius.circular(20),
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+  Widget _buildSiteHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: AppColors.cardDecoration(radius: 16),
         child: Row(
           children: [
-            const Icon(
-              Icons.shield,
-              color: Colors.white,
-              size: 28,
+            InkWell(
+              onTap: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SiteSelectionPage(
+                      accessToken: widget.accessToken ?? '',
+                      userData: widget.userData ?? {},
+                    ),
+                  ),
+                );
+              },
+              borderRadius: BorderRadius.circular(10),
+              child: const Padding(
+                padding: EdgeInsets.all(6.0),
+                child: Icon(Icons.arrow_back, color: Colors.white, size: 22),
+              ),
             ),
+            const SizedBox(width: 10),
+            const Icon(Icons.oil_barrel, color: Colors.white, size: 22),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(
-                'app_name'.tr(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-                overflow: TextOverflow.ellipsis,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.selectedSite?['site_name'] ?? 'app_name'.tr(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (widget.selectedSite?['site_type'] != null)
+                    Text(
+                      (widget.selectedSite?['site_type'] ?? '').toString().toUpperCase(),
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.75),
+                        fontSize: 12,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                ],
               ),
             ),
-            const Spacer(),
-            // Location filter toggle or loading indicator
-            if (_isLoadingUserLocation)
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8.0),
-                child: SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
-                  ),
-                ),
-              )
-            else if (_userCity != null && _extractCityKeywords(_userCity!).isNotEmpty)
-              GestureDetector(
-                onTap: _toggleShowAllCities,
-                child: Icon(
-                  _showAllCities ? Icons.location_off : Icons.location_city,
-                  color: _showAllCities ? Colors.white70 : Colors.white,
-                  size: 24,
-                ),
-              ),
-            const SizedBox(width: 16),
-            // Refresh button for incidents
+            const SizedBox(width: 12),
             if (_isLoadingIncidents)
               const SizedBox(
                 width: 20,
@@ -558,181 +596,16 @@ class _HomePageState extends State<HomePage> {
                 ),
               )
             else
-              GestureDetector(
-                onTap: _refreshIncidents,
-                child: const Icon(
-                  Icons.refresh,
-                  color: Colors.white,
-                  size: 24,
-                ),
+              IconButton(
+                onPressed: _refreshIncidents,
+                icon: const Icon(Icons.refresh, color: Colors.white),
               ),
-            const SizedBox(width: 16),
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const RegistrationPage(),
-                  ),
-                );
-              },
-              child: const Icon(
-                Icons.person,
-                color: Colors.white,
-                size: 24,
-              ),
-            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildViewToggle() {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => isMapView = true),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: isMapView ? Colors.white : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: isMapView
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.map,
-                      color: isMapView ? Colors.black87 : Colors.grey[600],
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'home.map_view'.tr(),
-                      style: TextStyle(
-                        color: isMapView ? Colors.black87 : Colors.grey[600],
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => isMapView = false),
-                child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: !isMapView ? Colors.white : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: !isMapView
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.list,
-                      color: !isMapView ? Colors.black87 : Colors.grey[600],
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'home.list_view'.tr(),
-                      style: TextStyle(
-                        color: !isMapView ? Colors.black87 : Colors.grey[600],
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLocationStatusIndicator() {
-    if (_userCity == null || _extractCityKeywords(_userCity!).isEmpty || _showAllCities) {
-      return const SizedBox.shrink();
-    }
-    
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E3FA3).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: const Color(0xFF1E3FA3).withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.location_city,
-            size: 20,
-            color: const Color(0xFF1E3FA3),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'location.showing_local_only'.tr(),
-              style: TextStyle(
-                fontSize: 14,
-                color: const Color(0xFF1E3FA3),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: _toggleShowAllCities,
-            style: TextButton.styleFrom(
-              minimumSize: Size.zero,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            ),
-            child: Text(
-              'location.show_all'.tr(),
-              style: TextStyle(
-                fontSize: 12,
-                color: const Color(0xFF1E3FA3),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildMapView() {
     return Container(
@@ -751,22 +624,36 @@ class _HomePageState extends State<HomePage> {
         borderRadius: BorderRadius.circular(16),
         child: _isLoadingLocation
             ? Container(
-                height: 300,
+                height: 350,
                 decoration: BoxDecoration(
-                  color: Colors.grey[200],
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white.withValues(alpha: 0.1),
+                      Colors.white.withValues(alpha: 0.05),
+                    ],
+                  ),
                   borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    width: 1,
+                  ),
                 ),
                 child: const Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      CircularProgressIndicator(),
+                      CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
                       SizedBox(height: 16),
                       Text(
                         'Getting your location...',
                         style: TextStyle(
-                          color: Colors.grey,
+                          color: Colors.white,
                           fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -790,40 +677,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildListView() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'home.nearby_incidents'.tr(),
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 12),
-          _incidentsError != null
-              ? _buildErrorWidget(_incidentsError!)
-              : _isLoadingIncidents
-                  ? _buildLoadingWidget()
-                  : incidents.isEmpty
-                      ? _buildEmptyWidget()
-                      : Column(
-                          children: incidents
-                              .map((incident) => Padding(
-                                    padding: const EdgeInsets.only(bottom: 8),
-                                    child: _buildIncidentCard(incident, isCompact: true),
-                                  ))
-                              .toList(),
-                        ),
-        ],
-      ),
-    );
-  }
-  
+  // ignore: unused_element
   Widget _buildErrorWidget(String error) {
     return Center(
       child: Column(
@@ -862,6 +716,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
   
+  // ignore: unused_element
   Widget _buildLoadingWidget() {
     return const Center(
       child: Column(
@@ -881,6 +736,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
   
+  // ignore: unused_element
   Widget _buildEmptyWidget() {
     return Center(
       child: Column(
@@ -915,88 +771,115 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildRecentAlerts() {
     return Container(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 80), // Add bottom margin for fixed button
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.white.withValues(alpha: 0.1),
+            Colors.white.withValues(alpha: 0.05),
+          ],
+        ),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'home.recent_alerts'.tr(),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  if (_userCity != null && _extractCityKeywords(_userCity!).isNotEmpty && !_showAllCities)
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      'location.local_only'.tr(),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: const Color(0xFF1E3FA3),
-                        fontWeight: FontWeight.w500,
+                      'home.recent_alerts'.tr(),
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
-                ],
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const NotificationsAlertsPage(),
+                    if (_userCity != null && _extractCityKeywords(_userCity!).isNotEmpty && !_showAllCities)
+                      Text(
+                        'location.local_only'.tr(),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                  ],
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const NotificationsAlertsPage(),
+                      ),
+                    );
+                  },
+                  child: Text(
+                    'home.view_all'.tr(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
                     ),
-                  );
-                },
-                child: Text(
-                  'home.view_all'.tr(),
-                  style: const TextStyle(
-                    color: Color(0xFF1E3FA3),
-                    fontWeight: FontWeight.w500,
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              minHeight: 120,
-              maxHeight: 200,
+              ],
             ),
+          ),
+          Expanded(
             child: _incidentsError != null
                 ? Center(
                     child: Text(
                       'Error loading recent incidents',
                       style: TextStyle(
-                        color: Colors.grey[600],
+                        color: Colors.white.withValues(alpha: 0.9),
                         fontSize: 14,
                       ),
                     ),
                   )
                 : _isLoadingIncidents
-                    ? const Center(child: CircularProgressIndicator())
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
                     : incidents.isEmpty
                         ? Center(
-                            child: Text(
-                              'No recent incidents',
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 14,
-                              ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.inbox_outlined,
+                                  size: 64,
+                                  color: Colors.white.withValues(alpha: 0.5),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No recent incidents',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
                             ),
                           )
                         : ListView.builder(
-                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
                             itemCount: incidents.length,
                             itemBuilder: (context, index) {
-                              return Container(
-                                width: 280,
-                                margin: const EdgeInsets.only(right: 12),
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
                                 child: _buildIncidentCard(incidents[index]),
                               );
                             },
@@ -1010,17 +893,7 @@ class _HomePageState extends State<HomePage> {
   Widget _buildIncidentCard(Map<String, dynamic> incident, {bool isCompact = false}) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      decoration: AppColors.cardDecoration(radius: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1028,16 +901,18 @@ class _HomePageState extends State<HomePage> {
           Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: incident['severityColor'].withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+                width: 44,
+                height: 44,
+                decoration: AppColors.iconContainer(radius: 12).copyWith(
+                  border: Border.all(
+                    color: AppColors.accentSecondary.withOpacity(0.6),
+                    width: 2,
+                  ),
                 ),
                 child: Icon(
                   incident['icon'],
-                  color: incident['severityColor'],
-                  size: 20,
+                  color: Colors.white,
+                  size: 22,
                 ),
               ),
               const SizedBox(width: 12),
@@ -1053,6 +928,7 @@ class _HomePageState extends State<HomePage> {
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
+                              color: Colors.white,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -1061,15 +937,15 @@ class _HomePageState extends State<HomePage> {
                         if (incident['verified'] == true)
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
+                              horizontal: 8,
+                              vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(0.1),
+                              color: Colors.green.withValues(alpha: 0.25),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: Colors.green.withOpacity(0.3),
-                                width: 1,
+                                color: Colors.green.shade700,
+                                width: 1.5,
                               ),
                             ),
                             child: Row(
@@ -1077,16 +953,16 @@ class _HomePageState extends State<HomePage> {
                               children: [
                                 Icon(
                                   Icons.verified,
-                                  color: Colors.green,
-                                  size: 12,
+                                  color: Colors.green.shade800,
+                                  size: 14,
                                 ),
-                                const SizedBox(width: 2),
+                                const SizedBox(width: 4),
                                 Text(
                                   'Verified',
                                   style: TextStyle(
-                                    color: Colors.green,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
+                                    color: Colors.green.shade800,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                               ],
@@ -1100,19 +976,23 @@ class _HomePageState extends State<HomePage> {
                         // Category badge
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
+                            horizontal: 8,
+                            vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.blue.withOpacity(0.1),
+                            color: Colors.white.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.3),
+                              width: 1,
+                            ),
                           ),
                           child: Text(
                             incident['category'],
-                            style: TextStyle(
-                              color: Colors.blue[700],
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
@@ -1124,15 +1004,19 @@ class _HomePageState extends State<HomePage> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: incident['severityColor'].withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
+                            color: incident['severityColor'].withValues(alpha: 0.25),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: incident['severityColor'],
+                              width: 1.5,
+                            ),
                           ),
                           child: Text(
                             incident['severity'],
                             style: TextStyle(
                               color: incident['severityColor'],
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
@@ -1149,14 +1033,15 @@ class _HomePageState extends State<HomePage> {
           Text(
             incident['description'],
             style: TextStyle(
-              color: Colors.grey[700],
+              color: Colors.white.withValues(alpha: 0.9),
               fontSize: 14,
               height: 1.3,
+              fontWeight: FontWeight.w500,
             ),
             maxLines: isCompact ? 2 : 3,
             overflow: TextOverflow.ellipsis,
           ),
-          
+
           const SizedBox(height: 12),
           // Location and timestamp row
           Row(
@@ -1164,15 +1049,16 @@ class _HomePageState extends State<HomePage> {
               Icon(
                 Icons.location_on,
                 size: 16,
-                color: Colors.grey[600],
+                color: Colors.white.withValues(alpha: 0.8),
               ),
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
                   incident['location'],
                   style: TextStyle(
-                    color: Colors.grey[600],
+                    color: Colors.white.withValues(alpha: 0.8),
                     fontSize: 12,
+                    fontWeight: FontWeight.w500,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -1185,14 +1071,15 @@ class _HomePageState extends State<HomePage> {
               Icon(
                 Icons.access_time,
                 size: 16,
-                color: Colors.grey[600],
+                color: Colors.white.withValues(alpha: 0.8),
               ),
               const SizedBox(width: 4),
               Text(
                 incident['timestamp'],
                 style: TextStyle(
-                  color: Colors.grey[600],
+                  color: Colors.white.withValues(alpha: 0.8),
                   fontSize: 12,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
               const Spacer(),
@@ -1229,40 +1116,64 @@ class _HomePageState extends State<HomePage> {
   Widget _buildReportButton() {
     return Container(
       margin: const EdgeInsets.all(16),
-      child: SizedBox(
-        width: double.infinity,
-        height: 56,
-        child: ElevatedButton(
-          onPressed: () {
+      decoration: BoxDecoration(
+        gradient: AppColors.accentGradient,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.accentPrimary.withOpacity(0.5),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const ReportIncidentScreen(),
+                builder: (context) => ReportIncidentScreen(
+                  accessToken: widget.accessToken,
+                  userData: widget.userData,
+                  selectedSite: widget.selectedSite,
+                ),
               ),
             );
           },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red[600],
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            elevation: 4,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.add, size: 24),
-              const SizedBox(width: 8),
-              Text(
-                'home.report_incident'.tr(),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            height: 64,
+            alignment: Alignment.center,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.add_alert,
+                    size: 24,
+                    color: Colors.white,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 12),
+                Text(
+                  'home.report_incident'.tr(),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -23,112 +23,143 @@ class Verified(str, Enum):
     false = "fake"
 
 
-class ViolenceType(str, Enum):
-    theft = "theft"
-    assaults = "assaults"
-    harassment = "harassment"
-    suspicious_activity = "suspicious activity"
-    kidnapping = "kidnapping"
+class PetroleumIncidentType(str, Enum):
+    equipment_damage = "equipment damage"
+    spill_leak = "spill/leak"
+    safety_violation = "safety violation"
+    environmental_hazard = "environmental hazard"
+    ppe_violation = "PPE violation"
+    fire_explosion = "fire/explosion"
+    confined_space = "confined space incident"
+    pressure_vessel = "pressure vessel incident"
+    gas_release = "gas release"
+    chemical_exposure = "chemical exposure"
 
 
-class AccidentType(str, Enum):
-    traffic = "traffic"
-    fire = "fire"
-    drowning = "drowning"
-    fall = "fall"
-    explosion = "explosion"
-    medical_emergency = "medical emergency"
-
-
-class UtilityType(str, Enum):
-    electricity_outage = "electricity outage"
-    water_leakage = "water leakage"
-    gas_leak = "gas leak"
-    internet_disruption = "internet disruption"
-    road_damage = "road damage"
-
-
-class IllegalType(str, Enum):
-    drug_dealing = "drug dealing"
-    smuggling = "smuggling"
-    vandalism = "vandalism"
-    fraud = "fraud"
-    cybercrime = "cybercrime"
-    trespassing = "trespassing"
+class ConstructionIncidentType(str, Enum):
+    structural_issue = "structural issue"
+    equipment_damage = "equipment damage"
+    safety_violation = "safety violation"
+    workplace_hazard = "workplace hazard"
+    material_defect = "material defect"
+    fall_hazard = "fall hazard"
+    excavation_issue = "excavation issue"
+    scaffolding_issue = "scaffolding issue"
+    electrical_hazard = "electrical hazard"
+    heavy_equipment = "heavy equipment incident"
 
 
 class EventType(str, Enum):
-    weapon = "weapon"
     person = "person"
-    vehicle = "vehicle"
     fire = "fire"
-    crowd = "crowd"
+    ppe_equipment = "ppe_equipment"  # Hard hat, safety vest, gloves, goggles
+    safety_equipment = "safety_equipment"  # Fire extinguisher, first aid, emergency stop
+    hazard_sign = "hazard_sign"  # Warning signs, caution tape
+    spill = "spill"  # Liquid spills, leaks
+    structural_damage = "structural_damage"  # Cracks, collapses, defects
+    machinery = "machinery"  # Heavy equipment, vehicles
+    unsafe_condition = "unsafe_condition"  # General safety violations
     other = "other"
 
 
 class Incident(BaseModel):
     # Common fields
-    category: str  # العنف، الحوادث، الخدمات، النشاط غير القانوني
+    category: str  # Petroleum Safety or Construction Safety
     title: str  # 3 words max
     description: str  # 2 short sentences
-    severity: Severity
+    severity: Severity  # AI decides: Low, Medium, High
     verified: Verified
+    site_type: str  # "petroleum" or "construction"
 
-    # Violence-specific
-    violence_type: Optional[ViolenceType] = None
-    weapon: Optional[str] = None  # only weapon name or "none"
+    # Common safety fields
     site_description: Optional[str] = None
     number_of_people: Optional[int] = None
     description_of_people: Optional[str] = None
     detailed_description_for_the_incident: Optional[str] = None
-    # Accident-specific
-    accident_type: Optional[AccidentType] = None
     vehicles_machines_involved: Optional[str] = None
-
-    # Utility-specific
-    utility_type: Optional[UtilityType] = None
     extent_of_impact: Optional[str] = None
     duration: Optional[str] = None
 
-    # Illegal Activity-specific
-    illegal_type: Optional[IllegalType] = None
-    items_involved: Optional[str] = None
+    # Petroleum-specific fields
+    petroleum_type: Optional[PetroleumIncidentType] = None
+    substance_involved: Optional[str] = None  # Oil, gas, chemical name
+    equipment_id: Optional[str] = None  # Equipment identifier if visible
+    spill_volume: Optional[str] = None  # Estimated volume
+    environmental_impact: Optional[str] = None  # Description of environmental damage
+    ppe_missing: Optional[List[str]] = None  # List of missing PPE items
+
+    # Construction-specific fields
+    construction_type: Optional[ConstructionIncidentType] = None
+    structure_affected: Optional[str] = None  # Building, bridge, scaffold, etc.
+    materials_involved: Optional[str] = None  # Concrete, steel, wood, etc.
+    height_elevation: Optional[str] = None  # If relevant to incident
+    equipment_involved: Optional[str] = None  # Crane, excavator, etc.
 
 class TimeStampedEvent(BaseModel):
-    event_type: EventType  
+    event_type: EventType
     first_second: float   # exact second when the important event happens
     confidence: float     # [0.0–1.0]
     description: str      # short description of why this frame is crucial
     suggested_frame_seconds: float  # single best frame to extract (3 decimals)
+    equipment_type: Optional[str] = None  # Type of equipment involved (e.g., "crane", "scaffolding", "pressure vessel")
+    safety_violation: Optional[str] = None  # Specific safety violation detected
+    ppe_missing: Optional[List[str]] = None  # List of missing PPE items
 TIMESTAMP_PROMPT = """
-You are an incident analysis system. Analyze the uploaded video and return ONLY a strict JSON object that follows the schema below.
+You are a petroleum and construction site safety incident analysis system. Analyze the uploaded video and return ONLY a strict JSON object that follows the schema below.
 
 Goals:
-- Identify **critical timestamps** (to the nearest 0.001s) that may contain crucial evidence or details valuable for authorities.
+- Identify **critical timestamps** (to the nearest 0.001s) that contain crucial safety evidence for HSE team investigation.
 - These include moments when:
-  • A weapon becomes visible.
-  • A person clearly initiates or escalates a fight.
-  • A suspect’s face is clearly visible (frontal or unobstructed).
-- Ignore all other frames. Only return timestamps of high evidential value.
+  • PPE equipment is missing or improperly used (hard hat, safety vest, gloves, goggles, mask, respirator)
+  • Safety equipment is visible or being used (fire extinguisher, first aid kit, emergency stop button, safety shower)
+  • Hazard signs or warnings are visible
+  • Spills, leaks, or environmental hazards occur (oil spill, chemical leak, gas release)
+  • Structural damage or defects become visible (cracks, corrosion, scaffolding issues)
+  • Heavy machinery or equipment is involved (crane, excavator, pressure vessel, pumps)
+  • Oil rig incidents occur (rig falling, rig collapse, rig structural failure)
+  • Petroleum equipment damage is visible (drilling equipment, wellhead damage, pipeline rupture, pump failure, compressor malfunction)
+  • Well incidents occur (falling in well, well blowout, well integrity issues)
+  • Unsafe conditions or safety violations are evident (working at height without harness, confined space entry without permit)
+  • Equipment damage or malfunction is visible
+  • A person's face is clearly visible (for identification)
+  • Fire, smoke, explosion, or flammable materials are present
+- Ignore routine work. Only return timestamps of high evidential value for safety investigation.
 - Provide a confidence score [0.0–1.0] for each timestamp.
 - `suggested_frame_seconds` must be the single best frame to extract for evidence (precise, clear visibility).
-- description must be in Arabic language.
+- All descriptions must be in English language.
+- Include optional fields: equipment_type (e.g., "crane", "pressure vessel", "oil rig", "drilling equipment", "wellhead"), safety_violation (specific violation), ppe_missing (array of missing PPE items).
 
 Schema (strict JSON):
 {
     {
-      "event_type": "weapon",
+      "event_type": "ppe_equipment",
       "first_second": 12.345,
       "confidence": 0.87,
-      "description": "يظهر السكين بوضوح في يد المشتبه به اليمنى",
-      "suggested_frame_seconds": 12.345
+      "description": "Worker without hard hat in hazardous area near overhead crane",
+      "suggested_frame_seconds": 12.345,
+      "equipment_type": "overhead crane",
+      "safety_violation": "Missing head protection in restricted area",
+      "ppe_missing": ["hard hat"]
     },
     {
-      "event_type": "person",
-      "first_second": 11.876,
+      "event_type": "spill",
+      "first_second": 18.876,
       "confidence": 0.92,
-      "description": "يدفع المبادر الشجار شخصًا آخر، وجه واضح مرئي",
-      "suggested_frame_seconds": 11.876
+      "description": "Liquid spill on floor near equipment, appears to be oil or chemical substance",
+      "suggested_frame_seconds": 18.876,
+      "equipment_type": "storage tank",
+      "safety_violation": "Uncontained spill creating slip hazard",
+      "ppe_missing": null
+    },
+    {
+      "event_type": "structural_damage",
+      "first_second": 25.123,
+      "confidence": 0.85,
+      "description": "Scaffolding not properly secured, missing safety rails on platform",
+      "suggested_frame_seconds": 25.123,
+      "equipment_type": "scaffolding",
+      "safety_violation": "Inadequate fall protection system",
+      "ppe_missing": null
     }
 }
 
@@ -136,9 +167,10 @@ Rules:
 - Return ONLY the JSON object, no extra text or explanation.
 - Times are in seconds with 3 decimal places.
 - Confidence values range 0.0–1.0.
-- Keep descriptions short but precise about why this frame is crucial.
+- Keep descriptions short but precise about the safety issue in English.
 - suggested_frame_seconds is mandatory for every event.
-- description must be in Arabic language.
+- All descriptions must be in English language.
+- Include equipment_type, safety_violation, and ppe_missing when applicable.
 """
 
 # --------------------------------------------------------------------------
@@ -320,47 +352,57 @@ def analyze_video_with_polling_return_data(video_path: str, address: str, timest
         print(f"File is now ACTIVE. Proceeding to content generation.")
 
         # Prepare the prompt
-        prompt =f""" 
-        Any descriptions or titles must be in Arabic language.
-        You are an advanced incident analysis system. 
+        prompt =f"""
+        All descriptions, titles, and text fields must be in English language.
+        You are an advanced petroleum and construction site safety incident analysis system.
         Analyze the uploaded video and output ONLY a JSON object that matches the Incident schema below.
-        The address of the incident is: {address}.
+        The site location is: {address}.
         The timestamp of the incident is: {timestamp}.
+
         General Rules:
         - Always output valid JSON, no extra text.
-        - category: one of [Violence, Accident, Utility, Illegal Activity, Clear].
-        - title: maximum 3 words, must summarize the event.
-        - description: exactly 2 short sentences summarizing what happened.
-        - severity: one of [Low, Medium, High].
-        - verified: one of [Real, False].
-        - All textual fields must be complete, precise, and consistent.
-        - accident_type: one of [violence, accident, utility, illegal activity, other].
-        Violence fields:
-        - type: theft, assaults, harassment, suspicious activity, kidnapping.
-        - weapon: only the weapon name; if no weapon is present, return "none".
-        - site_description: give a detailed description of the exact place (e.g., "narrow street behind the train station with dim lighting and parked cars").
-        - number_of_people: integer count.
-        - description_of_people: concise but informative (gender, clothing, age group if visible).
-        - detailed_description_for_the_incident: full sentences giving the sequence of events in detail.
+        - category: one of [Petroleum Safety, Construction Safety].
+        - site_type: "petroleum" or "construction" based on visual evidence.
+        - title: maximum 3 words, must summarize the safety issue in English.
+        - description: exactly 2 short sentences summarizing what happened in English.
+        - severity: YOU MUST DECIDE [Low, Medium, High] based on:
+          * High: Immediate danger, fire/explosion, major spill, critical injury risk, structural collapse, gas release
+          * Medium: Potential injury risk, safety violations, equipment damage, moderate hazards, PPE violations
+          * Low: Minor issues, procedural violations, minor equipment defects, minor safety concerns
+        - verified: one of [Real, False] - assess if this is a genuine safety incident.
+        - All textual fields must be complete, precise, and consistent in English.
 
-        Accident fields:
-        - site_description: detailed description of the exact place where it happened (e.g., "busy highway intersection with heavy evening traffic").
-        - vehicles_machines_involved: specify type and number clearly (e.g., "2 cars and 1 motorcycle").
+        Common Safety Fields (for both petroleum and construction):
+        - site_description: detailed description of the exact location within the site (e.g., "Refinery area near Tank #5" or "Third floor of construction site next to scaffolding").
+        - number_of_people: count of people visible in the incident area.
+        - description_of_people: include visible PPE status (e.g., "3 workers, 2 without hard hats, 1 without reflective vest").
+        - detailed_description_for_the_incident: full detailed sequence of events in English.
+        - vehicles_machines_involved: specify equipment type (e.g., "crane, excavator" or "tanker truck, pump").
+        - extent_of_impact: scale of damage or affected area.
+        - duration: estimated time of incident or ongoing duration.
 
-        Utility fields:
-        - utility_type: electricity_outage, water_leakage, gas_leak, internet_disruption, road_damage.
-        - site_description: detailed location (e.g., "residential neighborhood near downtown, affecting several apartment blocks").
-        - extent_of_impact: clear statement of scale (e.g., "approximately 200 households").
-        - duration: estimated or reported downtime.
+        PETROLEUM SAFETY Fields (if site_type is "petroleum"):
+        - petroleum_type: one of [equipment damage, spill/leak, safety violation, environmental hazard, PPE violation, fire/explosion, confined space incident, pressure vessel incident, gas release, chemical exposure].
+          * equipment damage includes: oil rig fallen or falling, drilling rig collapse, petroleum equipment damaged (wellhead, drilling equipment, pipeline rupture, pump failure, compressor malfunction), well incidents (falling in well, well blowout, well integrity issues)
+        - substance_involved: identify the substance if visible (e.g., "crude oil", "natural gas", "chemical solvent").
+        - equipment_id: any visible equipment numbers or identifiers on tanks, pipes, valves, rigs, drilling equipment, wellheads.
+        - spill_volume: estimated volume if assessable (e.g., "estimated 50-100 liters" or "large spill").
+        - environmental_impact: describe environmental damage (e.g., "soil contamination in surrounding area", "leak reaching water source").
+        - ppe_missing: list of missing PPE items as English array (e.g., ["hard hat", "safety goggles", "gloves"]) or null if all present.
 
-        Illegal Activity fields:
-        - illegal_type: drug_dealing, smuggling, vandalism, fraud, cybercrime, trespassing.
-        - site_description: detailed description of where the activity occurred (e.g., "abandoned warehouse on the outskirts of the city").
-        - items_involved: specify in detail (e.g., "large shipment of cocaine packaged in boxes").
+        CONSTRUCTION SAFETY Fields (if site_type is "construction"):
+        - construction_type: one of [structural issue, equipment damage, safety violation, workplace hazard, material defect, fall hazard, excavation issue, scaffolding issue, electrical hazard, heavy equipment incident].
+        - structure_affected: identify structure (e.g., "scaffolding on east side", "second floor of building").
+        - materials_involved: construction materials involved (e.g., "concrete, rebar", "timber").
+        - height_elevation: if fall hazard or work at height (e.g., "approximately 15 meters high").
+        - equipment_involved: construction equipment (e.g., "tower crane", "concrete mixer").
 
         Important:
-        - If a field is not relevant for the detected category, set it to null.
-        - Be consistent: descriptions of people, weapons, places, and actions must align logically with the video content.
+        - YOU MUST DECIDE severity based on the safety risk level visible in the video.
+        - If a field is not relevant for the detected site_type, set it to null.
+        - For ppe_missing, return array of English PPE names or null.
+        - Be precise: equipment IDs, substance types, and locations help HSE team respond effectively.
+        - All descriptions must be detailed enough for safety investigation and corrective action in English.
         """
         
         # Generate content with retry logic for API overload
@@ -506,8 +548,7 @@ def extract_frames_from_json_with_retry(video_path, json_file, output_folder, ma
     # Process frames in batches to reduce API load
     client = get_gemini_client()
     prompt = """
-    
-    You are analyzing multiple extracted frames from an incident video. 
+    You are analyzing extracted frames from a petroleum/construction site safety incident video.
     Return ONLY a strict JSON array, no explanations or extra text.
 
     For each input image, return an object:
@@ -516,15 +557,19 @@ def extract_frames_from_json_with_retry(video_path, json_file, output_folder, ma
       "detections": [
         {
           "box_2d": [ymin, xmin, ymax, xmax] with values normalized to 0-1000,
-          "type": "weapon" or "person",
-          "confidence": float
+          "type": one of ["person", "equipment_damage", "spill", "fire", "ppe_violation", "structural_damage", "machinery", "hazard_sign", "safety_equipment"],
+          "confidence": float,
+          "description": "brief description in English"
         }
       ]
     }
 
     Rules:
-    - Detect ONLY weapons and people.
-    - If a person's face is not clearly visible, do NOT return them.
+    - Detect people, damaged equipment, spills/leaks, fire/smoke, PPE violations, structural damage, machinery, hazard signs, and safety equipment.
+    - Focus on safety-relevant objects and hazards.
+    - For people: detect workers in the scene, especially those with PPE violations.
+    - For equipment damage: note any damage or malfunction including oil rig fallen or falling, petroleum equipment damage (wellhead, drilling equipment, pipeline, pumps), well incidents.
+    - All descriptions must be in English.
     """
 
     config = types.GenerateContentConfig(
@@ -697,8 +742,8 @@ def extract_frames_with_comprehensive_output(video_path, json_file, output_folde
     # Process frames in batches to reduce API load
     client = get_gemini_client()
     prompt = """
-    Any descriptions must be in Arabic language.
-    You are analyzing multiple extracted frames from an incident video. 
+    All descriptions must be in English language.
+    You are analyzing extracted frames from a petroleum/construction site safety incident video.
     Return ONLY a strict JSON array, no explanations or extra text.
 
     For each input image, return an object:
@@ -707,17 +752,20 @@ def extract_frames_with_comprehensive_output(video_path, json_file, output_folde
       "detections": [
         {
           "box_2d": [ymin, xmin, ymax, xmax] with values normalized to 0–1000,
-          "type": "weapon" or "person",
+          "type": one of ["person", "equipment_damage", "spill", "fire", "ppe_violation", "structural_damage", "machinery", "hazard_sign", "safety_equipment"],
           "confidence": float,
-          "description": "detailed description of what is detected"
+          "description": "detailed description in English of what is detected"
         }
       ]
     }
 
     Rules:
-    - Detect ONLY weapons and people.
-    - If a person's face is not clearly visible, do NOT return them.
-    - Provide detailed descriptions for each detection.
+    - Detect people, damaged equipment, spills/leaks, fire/smoke, PPE violations, structural damage, machinery, hazard signs, and safety equipment.
+    - Focus on safety-critical elements and hazards.
+    - For people: detect workers, note their PPE status (e.g., "worker without hard hat", "worker with proper safety vest").
+    - For equipment damage: note any damage or malfunction including oil rig fallen or falling, drilling rig collapse, petroleum equipment damage (wellhead, drilling equipment, pipeline rupture, pump failure, compressor malfunction), damaged valves, corroded pipes, well incidents.
+    - For spills: describe the substance if possible (e.g., "oil spill on floor", "crude oil leak").
+    - Provide detailed English descriptions for each detection to aid HSE investigation.
     """
 
     config = types.GenerateContentConfig(
@@ -800,9 +848,9 @@ def extract_frames_with_comprehensive_output(video_path, json_file, output_folde
         height, width = frame.shape[:2]
         scene_frame = frame.copy()  # Copy for drawing bounding boxes
 
-        # Extract weapon_type and person_attributes from detections
-        weapon_type = None
-        person_attributes = None
+        # Extract safety hazards and person attributes from detections
+        detected_hazards = []  # List of all detected safety hazards
+        person_attributes = []  # List of worker attributes
         detected_elements_paths = []
 
         for det_idx, det in enumerate(det_group["detections"]):
@@ -814,34 +862,50 @@ def extract_frames_with_comprehensive_output(video_path, json_file, output_folde
 
             # Check if the bounding box is valid (has area)
             if abs_x2 > abs_x1 and abs_y2 > abs_y1:
-                # Draw bounding box on scene frame
-                color = (0, 255, 0) if det["type"] == "person" else (0, 0, 255)
-                cv2.rectangle(scene_frame, (abs_x1, abs_y1), (abs_x2, abs_y2), color, 2)
-                
+                # Draw bounding box on scene frame with color based on hazard type
+                color_map = {
+                    "person": (0, 255, 0),          # Green
+                    "fire": (0, 0, 255),            # Red
+                    "spill": (0, 165, 255),         # Orange
+                    "equipment_damage": (0, 255, 255),  # Yellow
+                    "ppe_violation": (255, 0, 0),   # Blue
+                    "structural_damage": (128, 0, 128),  # Purple
+                    "machinery": (255, 255, 0),     # Cyan
+                    "hazard_sign": (255, 255, 255), # White
+                    "safety_equipment": (0, 255, 0) # Green
+                }
+                color = color_map.get(det["type"], (128, 128, 128))  # Default gray
+                cv2.rectangle(scene_frame, (abs_x1, abs_y1), (abs_x2, abs_y2), color, 4)
+
                 # Add label
                 label = f"{det['type']} ({det['confidence']:.2f})"
-                cv2.putText(scene_frame, label, (abs_x1, abs_y1-10), 
+                cv2.putText(scene_frame, label, (abs_x1, abs_y1-10),
                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
-                
+
                 # Crop the detection from the frame
                 cropped_detection = frame[abs_y1:abs_y2, abs_x1:abs_x2]
-                
+
                 # Create filename for the cropped detection
                 detection_filename = os.path.join(
-                    detections_folder, 
+                    detections_folder,
                     f"event_{frame_info['idx']+1}_at_{frame_time:.3f}s_{det['type']}_det{det_idx+1}_conf{det['confidence']:.2f}.jpg"
                 )
-                
+
                 # Save the cropped detection
                 cv2.imwrite(detection_filename, cropped_detection)
                 detected_elements_paths.append(detection_filename)
-                
-                # Extract attributes based on type
-                if det["type"] == "weapon":
-                    weapon_type = extract_weapon_type(det.get("description", ""))
-                elif det["type"] == "person":
-                    person_attributes = det.get("description", "Person detected")
-                
+
+                # Categorize detections
+                if det["type"] == "person":
+                    person_attributes.append(det.get("description", "Person detected"))
+                else:
+                    # All other types are safety hazards or equipment
+                    detected_hazards.append({
+                        "type": det["type"],
+                        "description": det.get("description", ""),
+                        "confidence": det["confidence"]
+                    })
+
                 print(f"Saved detection: {detection_filename}")
 
         # Save scene image with bounding boxes
@@ -858,30 +922,17 @@ def extract_frames_with_comprehensive_output(video_path, json_file, output_folde
             "confidence": original_event.get("confidence"),
             "description": original_event.get("description"),
             "suggested_frame_seconds": original_event.get("suggested_frame_seconds"),
-            "weapon_type": weapon_type,
-            "person_attributes": person_attributes,
+            "detected_hazards": detected_hazards,  # List of safety hazards found
+            "person_attributes": person_attributes,  # List of worker descriptions
             "image_path": scene_filename,
             "detected_elements_paths": detected_elements_paths
         }
-        
+
         enhanced_events.append(enhanced_event)
 
     cap.release()
     print(f"✓ Comprehensive frame extraction completed. Check '{output_folder}' folder.")
     return enhanced_events
-
-
-def extract_weapon_type(description: str) -> str:
-    """Extract weapon type from description"""
-    description_lower = description.lower()
-    if any(word in description_lower for word in ["knife", "blade", "machete"]):
-        return "knife/machete"
-    elif any(word in description_lower for word in ["stick", "pole", "rod", "bat"]):
-        return "stick/pole"
-    elif any(word in description_lower for word in ["gun", "pistol", "firearm"]):
-        return "firearm"
-    else:
-        return "unknown"
 
 
 def create_comprehensive_analysis(incident_data: dict, detected_events: list) -> dict:

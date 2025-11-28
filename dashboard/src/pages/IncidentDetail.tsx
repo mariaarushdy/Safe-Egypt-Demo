@@ -5,12 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  ArrowLeft, 
-  CheckCircle, 
-  XCircle, 
-  MapPin, 
-  Calendar, 
+import {
+  ArrowLeft,
+  CheckCircle,
+  XCircle,
+  MapPin,
+  Calendar,
   AlertTriangle,
   Users,
   Clock,
@@ -20,11 +20,12 @@ import {
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import Sidebar from "@/components/Sidebar";
-import { 
-  fetchIncidentDetail, 
+import GoogleMapWrapper from "@/components/GoogleMapWrapper";
+import {
+  fetchIncidentDetail,
   updateIncidentStatus,
   type IncidentInfo,
-  type DetectedEvent 
+  type DetectedEvent
 } from "@/lib/api";
 import { mediaCacheService } from "@/services/mediaCacheService";
 
@@ -492,12 +493,24 @@ const IncidentDetail = () => {
                       </p>
                     </div>
 
-                    <div className="h-32 bg-accent rounded-lg flex items-center justify-center">
-                      <div className="text-center">
-                        <MapPin className="h-6 w-6 mx-auto mb-1 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">Map View</p>
-                        <p className="text-xs text-muted-foreground">(Integration Required)</p>
-                      </div>
+                    <div className="h-64 rounded-lg overflow-hidden border border-border">
+                      {incidentData && (
+                        <GoogleMapWrapper
+                          incidents={[{
+                            incident_id: incidentData.incident_id,
+                            title: incidentData.title,
+                            location: incidentData.location,
+                            severity: incidentData.severity,
+                            status: incidentData.status,
+                            category: incidentData.category
+                          }]}
+                          onIncidentClick={(incidentId) => {
+                            // Already on this incident page, no need to navigate
+                            console.log('Incident clicked:', incidentId);
+                          }}
+                          className="w-full h-full"
+                        />
+                      )}
                     </div>
                   </CardContent>
                 </Card>

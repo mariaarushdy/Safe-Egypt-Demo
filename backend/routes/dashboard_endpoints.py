@@ -1,12 +1,13 @@
 from pydantic import BaseModel, Field, validator
-from fastapi import APIRouter, HTTPException, Response, Request
+from fastapi import APIRouter, HTTPException, Response, Request, Depends
 from fastapi.responses import FileResponse
 from services.dashboard import (
-    get_incidents_summary_service, 
-    get_incident_by_id_service, 
+    get_incidents_summary_service,
+    get_incident_by_id_service,
     update_incident_status_service,
     manage_users_service
 )
+from middleware.company_auth import get_current_hse_user
 from typing import Optional
 import re
 import os
@@ -171,7 +172,10 @@ async def create_dashboard_user(request: CreateUserRequest):
     return result
 
 @dashboard_router.get("/incident/{incident_id}")
-async def get_incident_by_id(incident_id: str, req: Request):
+async def get_incident_by_id_endpoint(
+    incident_id: str,
+    current_user: dict = Depends(get_current_hse_user)
+):
     """
     Get detailed incident information by ID
     Multi-tenant: Validates incident belongs to HSE user's company
@@ -182,42 +186,37 @@ async def get_incident_by_id(incident_id: str, req: Request):
     Returns:
         Complete incident information including AI analysis, media files, etc.
     """
-    from middleware.company_auth import get_current_hse_user
-    from models.db_helper import get_incident_by_id
+    # Use service function to get properly formatted incident data
+    incident_data = get_incident_by_id_service(incident_id, current_user['company_id'])
 
-    # Get authenticated HSE user
-    hse_user = await get_current_hse_user(req)
-    company_id = hse_user['company_id']
-
-    # Get incident with company validation
-    incident = get_incident_by_id(incident_id, company_id)
-
-    if not incident:
-        raise HTTPException(
-            status_code=404,
-            detail="Incident not found or access denied"
-        )
-
+    # Return in the format expected by frontend (both 'incident' and 'incident_info' for compatibility)
     return {
         "status": "success",
-        "incident": incident
+        "incident_id": incident_id,
+        "incident": incident_data.get("incident_info"),
+        "incident_info": incident_data.get("incident_info")
     }
 
 
 @dashboard_router.post("/incident/{incident_id}/video")
-async def serve_incident_video(incident_id: str, request: VideoRequest, req: Request):
+async def serve_incident_video(
+    incident_id: str,
+    request: VideoRequest,
+    req: Request,
+    current_user: dict = Depends(get_current_hse_user)
+):
     """
     Serve video file associated with an incident
-    
+
     Args:
         incident_id: The unique incident identifier
         request: VideoRequest containing file_path
-        
+
     Returns:
         Video file as FileResponse
     """
-    # Get incident data to verify the file belongs to this incident
-    incident_data = get_incident_by_id_service(incident_id)
+    # Get incident data to verify the file belongs to this incident (with company validation)
+    incident_data = get_incident_by_id_service(incident_id, current_user['company_id'])
     
     # Normalize the requested path
     requested_path = request.file_path.replace("\\", "/")
@@ -274,19 +273,24 @@ async def serve_incident_video(incident_id: str, request: VideoRequest, req: Req
 
 
 @dashboard_router.post("/incident/{incident_id}/image")
-async def serve_incident_image(incident_id: str, request: ImageRequest, req: Request):
+async def serve_incident_image(
+    incident_id: str,
+    request: ImageRequest,
+    req: Request,
+    current_user: dict = Depends(get_current_hse_user)
+):
     """
     Serve image file associated with an incident
-    
+
     Args:
-        incident_id: The unique incident identifier  
+        incident_id: The unique incident identifier
         request: ImageRequest containing image_path
-        
+
     Returns:
         Image file as FileResponse
     """
-    # Get incident data to verify the file belongs to this incident
-    incident_data = get_incident_by_id_service(incident_id)
+    # Get incident data to verify the file belongs to this incident (with company validation)
+    incident_data = get_incident_by_id_service(incident_id, current_user['company_id'])
     
     # Find the requested image file in detected events
     image_found = False
@@ -342,18 +346,22 @@ async def serve_incident_image(incident_id: str, request: ImageRequest, req: Req
 
 
 @dashboard_router.post("/incident/{incident_id}/status")
-async def update_incident_status(incident_id: str, request: StatusUpdateRequest):
+async def update_incident_status(
+    incident_id: str,
+    request: StatusUpdateRequest,
+    current_user: dict = Depends(get_current_hse_user)
+):
     """
     Update incident status to accepted or rejected
-    
+
     Args:
         incident_id: The unique incident identifier
         request: StatusUpdateRequest containing status (accepted/rejected)
-        
+
     Returns:
         Dict containing success message and updated incident info
     """
-    return update_incident_status_service(incident_id, request.status)
+    return update_incident_status_service(incident_id, request.status, current_user['company_id'])
 
 # TODO: Add dashboard-specific endpoints here
 # Examples:

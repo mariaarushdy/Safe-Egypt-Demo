@@ -1,6 +1,6 @@
 """
-Authentication and User Management Service
-Handles user registration, login, and authentication for both mobile and dashboard users
+Multi-Tenant Authentication Service for Site Safety System
+Handles authentication for workers and HSE users with company isolation
 """
 
 import os
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 # Configuration
-SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
 JWT_ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 REFRESH_TOKEN_EXPIRE_DAYS = 30  # 30 days
@@ -25,30 +25,30 @@ REFRESH_TOKEN_EXPIRE_DAYS = 30  # 30 days
 
 class AuthService:
     """Service for handling authentication operations"""
-    
+
     @staticmethod
     def hash_password(password: str) -> str:
         """Hash a password for storing."""
         return generate_password_hash(password)
-    
+
     @staticmethod
     def verify_password(password: str, password_hash: str) -> bool:
         """Verify a stored password against one provided by user"""
         return check_password_hash(password_hash, password)
-    
+
     @staticmethod
     def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-        """Create a JWT access token"""
+        """Create a JWT access token with company_id for multi-tenant isolation"""
         to_encode = data.copy()
         if expires_delta:
             expire = datetime.utcnow() + expires_delta
         else:
             expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        
+
         to_encode.update({"exp": expire, "iat": datetime.utcnow()})
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=JWT_ALGORITHM)
         return encoded_jwt
-    
+
     @staticmethod
     def create_refresh_token(data: dict) -> str:
         """Create a JWT refresh token"""
@@ -58,112 +58,6 @@ class AuthService:
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=JWT_ALGORITHM)
         return encoded_jwt
 
-async def authenticate_dashboard_user(username: str, password: str) -> Dict[str, Any]:
-    """
-    Authenticate a dashboard user with username and password
-    
-    Args:
-        username: The username to authenticate
-        password: The password to verify
-        
-    Returns:
-        Dict containing authentication result and token if successful
-    """
-    from models.db_helper import get_db_connection
-    auth_service = AuthService()
-    
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        
-        # Get user from database
-        cur.execute("""
-            SELECT id, username, password_hash, full_name, is_active
-            FROM dashboard_users
-            WHERE username = %s;
-        """, (username,))
-        
-        user = cur.fetchone()
-        
-        logger.info(f"Authentication attempt for username: {username}")
-        logger.info(f"User found in database: {user is not None}")
-        
-        if not user:
-            logger.warning(f"User '{username}' not found in database")
-            return {
-                "status": "error",
-                "message": "Invalid username or password"
-            }
-            
-        user_id, db_username, password_hash, full_name, is_active = user
-        
-        # Check if user is active
-        if not is_active:
-            return {
-                "status": "error",
-                "message": "Account is inactive"
-            }
-        
-        # Verify password using bcrypt
-        try:
-            logger.info(f"Attempting password verification for user: {username}")
-            password_match = bcrypt.checkpw(password.encode('utf-8'), password_hash.encode('utf-8'))
-            logger.info(f"Password match result: {password_match}")
-            
-            if not password_match:
-                logger.warning(f"Invalid password for user: {username}")
-                return {
-                    "status": "error",
-                    "message": "Invalid username or password"
-                }
-        except Exception as e:
-            logger.error(f"Error verifying password for {username}: {str(e)}", exc_info=True)
-            return {
-                "status": "error",
-                "message": "Invalid username or password"
-            }
-        
-        # Generate JWT token
-        token_data = {
-            "sub": str(user_id),
-            "username": username,
-            "full_name": full_name
-        }
-        
-        access_token = auth_service.create_access_token(token_data)
-        
-        # Update last login
-        cur.execute("""
-            UPDATE dashboard_users 
-            SET last_login = NOW() 
-            WHERE id = %s;
-        """, (user_id,))
-        
-        conn.commit()
-        
-        return {
-            "status": "success",
-            "message": "Authentication successful",
-            "access_token": access_token,
-            "token_type": "bearer",
-            "user": {
-                "id": user_id,
-                "username": username,
-                "full_name": full_name
-            }
-        }
-        
-    except Exception as e:
-        return {
-            "status": "error",
-            "message": f"Authentication failed: {str(e)}"
-        }
-    finally:
-        if cur:
-            cur.close()
-        if conn:
-            conn.close()
-    
     @staticmethod
     def verify_token(token: str) -> Optional[Dict[str, Any]]:
         """Verify and decode a JWT token"""
@@ -171,244 +65,350 @@ async def authenticate_dashboard_user(username: str, password: str) -> Dict[str,
             payload = jwt.decode(token, SECRET_KEY, algorithms=[JWT_ALGORITHM])
             return payload
         except jwt.ExpiredSignatureError:
+            logger.warning("Token expired")
             return None
         except jwt.InvalidTokenError:
+            logger.warning("Invalid token")
             return None
-    
-    @staticmethod
-    def create_user_tokens(user_id: int, username: str, email: str, 
-                          user_type: str, role: str) -> Dict[str, str]:
-        """Create both access and refresh tokens for a user"""
+
+
+async def authenticate_worker(username: str, password: str, company_code: str) -> Dict[str, Any]:
+    """
+    Authenticate a worker with username, password, and company code
+    Multi-tenant: Worker must belong to the specified company
+
+    Args:
+        username: The username to authenticate
+        password: The password to verify
+        company_code: Company code for multi-tenant isolation
+
+    Returns:
+        Dict containing authentication result and token if successful
+    """
+    from models.db_helper import get_db_connection, get_company_by_code
+
+    try:
+        # 1. Validate company exists
+        company = get_company_by_code(company_code)
+        if not company:
+            logger.warning(f"Invalid company code: {company_code}")
+            return {
+                "status": "error",
+                "message": "Invalid company code"
+            }
+
+        company_id = company['id']
+
+        # 2. Get worker from database
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT w.id, w.company_id, w.username, w.password_hash, w.full_name,
+                   w.employee_id, w.role, w.department, w.is_active, w.device_id,
+                   c.company_name, c.industry_type
+            FROM workers w
+            JOIN companies c ON w.company_id = c.id
+            WHERE w.username = %s AND w.company_id = %s;
+        """, (username, company_id))
+
+        user = cur.fetchone()
+
+        logger.info(f"Worker authentication attempt: username={username}, company={company_code}")
+
+        if not user:
+            logger.warning(f"Worker '{username}' not found for company '{company_code}'")
+            cur.close()
+            conn.close()
+            return {
+                "status": "error",
+                "message": "Invalid credentials"
+            }
+
+        (worker_id, db_company_id, db_username, password_hash, full_name,
+         employee_id, role, department, is_active, device_id,
+         company_name, industry_type) = user
+
+        # 3. Check if worker is active
+        if not is_active:
+            cur.close()
+            conn.close()
+            return {
+                "status": "error",
+                "message": "Account is inactive"
+            }
+
+        # 4. Verify password
+        try:
+            password_match = check_password_hash(password_hash, password)
+
+            if not password_match:
+                logger.warning(f"Invalid password for worker: {username}")
+                cur.close()
+                conn.close()
+                return {
+                    "status": "error",
+                    "message": "Invalid credentials"
+                }
+        except Exception as e:
+            logger.error(f"Error verifying password: {str(e)}")
+            cur.close()
+            conn.close()
+            return {
+                "status": "error",
+                "message": "Authentication failed"
+            }
+
+        # 5. Generate JWT token with company_id for multi-tenant isolation
         token_data = {
-            "user_id": user_id,
+            "sub": str(worker_id),
+            "id": worker_id,
             "username": username,
-            "email": email,
-            "user_type": user_type,
-            "role": role
+            "full_name": full_name,
+            "company_id": company_id,  # Critical for multi-tenant security
+            "company_code": company_code,
+            "company_name": company_name,
+            "user_type": "worker",
+            "role": role,
+            "employee_id": employee_id
         }
-        
+
         access_token = AuthService.create_access_token(token_data)
-        refresh_token = AuthService.create_refresh_token(token_data)
-        
+
+        # 6. Update last login
+        cur.execute("""
+            UPDATE workers
+            SET last_login = CURRENT_TIMESTAMP
+            WHERE id = %s;
+        """, (worker_id,))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        logger.info(f"✅ Worker authenticated successfully: {username} @ {company_code}")
+
         return {
+            "status": "success",
+            "message": "Authentication successful",
             "access_token": access_token,
-            "refresh_token": refresh_token,
-            "token_type": "bearer"
+            "token_type": "bearer",
+            "user": {
+                "id": worker_id,
+                "username": username,
+                "full_name": full_name,
+                "employee_id": employee_id,
+                "role": role,
+                "department": department,
+                "company_id": company_id,
+                "company_code": company_code,
+                "company_name": company_name,
+                "industry_type": industry_type,
+                "user_type": "worker"
+            }
+        }
+
+    except Exception as e:
+        logger.error(f"Worker authentication error: {str(e)}")
+        return {
+            "status": "error",
+            "message": f"Authentication failed: {str(e)}"
         }
 
 
-class UserService:
-    """Service for user management operations"""
-    
-    def __init__(self, db_connection):
-        """Initialize with database connection"""
-        self.conn = db_connection
-        self.cur = self.conn.cursor()
-    
-    def create_mobile_user(self, username: str, email: str, password: str, 
-                          full_name: Optional[str] = None, 
-                          phone_number: Optional[str] = None) -> Dict[str, Any]:
-        """Create a new mobile app user"""
-        try:
-            password_hash = AuthService.hash_password(password)
-            
-            self.cur.execute("""
-                INSERT INTO users (username, email, password_hash, full_name, phone_number, 
-                                 user_type, role, is_active, is_verified)
-                VALUES (%s, %s, %s, %s, %s, 'mobile', 'user', TRUE, FALSE)
-                RETURNING id, username, email, full_name, phone_number, user_type, role, 
-                          is_active, created_at;
-            """, (username, email, password_hash, full_name, phone_number))
-            
-            user = self.cur.fetchone()
-            self.conn.commit()
-            
+async def authenticate_hse_user(username: str, password: str, company_code: str) -> Dict[str, Any]:
+    """
+    Authenticate an HSE user with username, password, and company code
+    Multi-tenant: HSE user must belong to the specified company
+
+    Args:
+        username: The username to authenticate
+        password: The password to verify
+        company_code: Company code for multi-tenant isolation
+
+    Returns:
+        Dict containing authentication result and token if successful
+    """
+    from models.db_helper import get_db_connection, get_company_by_code
+
+    try:
+        # 1. Validate company exists
+        company = get_company_by_code(company_code)
+        if not company:
+            logger.warning(f"Invalid company code: {company_code}")
             return {
-                "id": user[0],
-                "username": user[1],
-                "email": user[2],
-                "full_name": user[3],
-                "phone_number": user[4],
-                "user_type": user[5],
-                "role": user[6],
-                "is_active": user[7],
-                "created_at": user[8].isoformat() if user[8] else None
+                "status": "error",
+                "message": "Invalid company code"
             }
-        except Exception as e:
-            self.conn.rollback()
-            raise Exception(f"Failed to create mobile user: {str(e)}")
-    
-    def create_dashboard_user(self, username: str, email: str, password: str,
-                             full_name: str, role: str = 'operator') -> Dict[str, Any]:
-        """Create a new dashboard user (admin, moderator, or operator)"""
-        valid_roles = ['admin', 'moderator', 'operator']
-        if role not in valid_roles:
-            raise ValueError(f"Invalid role. Must be one of: {valid_roles}")
-        
-        try:
-            password_hash = AuthService.hash_password(password)
-            
-            self.cur.execute("""
-                INSERT INTO users (username, email, password_hash, full_name, 
-                                 user_type, role, is_active, is_verified)
-                VALUES (%s, %s, %s, %s, 'dashboard', %s, TRUE, TRUE)
-                RETURNING id, username, email, full_name, user_type, role, 
-                          is_active, created_at;
-            """, (username, email, password_hash, full_name, role))
-            
-            user = self.cur.fetchone()
-            self.conn.commit()
-            
+
+        company_id = company['id']
+
+        # 2. Get HSE user from database
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT h.id, h.company_id, h.username, h.password_hash, h.full_name,
+                   h.role, h.email, h.is_active,
+                   c.company_name, c.industry_type
+            FROM hse_users h
+            JOIN companies c ON h.company_id = c.id
+            WHERE h.username = %s AND h.company_id = %s;
+        """, (username, company_id))
+
+        user = cur.fetchone()
+
+        logger.info(f"HSE authentication attempt: username={username}, company={company_code}")
+
+        if not user:
+            logger.warning(f"HSE user '{username}' not found for company '{company_code}'")
+            cur.close()
+            conn.close()
             return {
-                "id": user[0],
-                "username": user[1],
-                "email": user[2],
-                "full_name": user[3],
-                "user_type": user[4],
-                "role": user[5],
-                "is_active": user[6],
-                "created_at": user[7].isoformat() if user[7] else None
+                "status": "error",
+                "message": "Invalid credentials"
             }
-        except Exception as e:
-            self.conn.rollback()
-            raise Exception(f"Failed to create dashboard user: {str(e)}")
-    
-    def authenticate_user(self, username: str, password: str) -> Optional[Dict[str, Any]]:
-        """Authenticate a dashboard user by username and password"""
-        try:
-            query = """
-                SELECT id, username, password_hash, full_name, is_active, last_login
-                FROM dashboard_users
-                WHERE username = %s
-            """
-            params = [username]
-            self.cur.execute(query, params)
-            user = self.cur.fetchone()
-            if not user:
-                return None
-            # Check if user is active
-            if not user[4]:  # is_active
-                return None
-            # Verify password (password_hash is at index 2)
-            if not AuthService.verify_password(password, user[2]):
-                return None
-            # Update last login in dashboard_users
-            self.cur.execute("""
-                UPDATE dashboard_users SET last_login = CURRENT_TIMESTAMP
-                WHERE id = %s;
-            """, (user[0],))
-            self.conn.commit()
+
+        (hse_id, db_company_id, db_username, password_hash, full_name,
+         role, email, is_active, company_name, industry_type) = user
+
+        # 3. Check if user is active
+        if not is_active:
+            cur.close()
+            conn.close()
             return {
-                "id": user[0],
-                "username": user[1],
-                "full_name": user[3],
-                "is_active": user[4],
-                "last_login": user[5]
+                "status": "error",
+                "message": "Account is inactive"
             }
-        except Exception as e:
-            print(f"Authentication error: {str(e)}")
-            return None
-    
-    def get_user_by_id(self, user_id: int) -> Optional[Dict[str, Any]]:
-        """Get user by ID"""
+
+        # 4. Verify password
         try:
-            self.cur.execute("""
-                SELECT id, username, email, full_name, phone_number,
-                       user_type, role, is_active, is_verified, created_at, last_login
-                FROM users
-                WHERE id = %s;
-            """, (user_id,))
-            
-            user = self.cur.fetchone()
-            if not user:
-                return None
-            
+            password_match = check_password_hash(password_hash, password)
+
+            if not password_match:
+                logger.warning(f"Invalid password for HSE user: {username}")
+                cur.close()
+                conn.close()
+                return {
+                    "status": "error",
+                    "message": "Invalid credentials"
+                }
+        except Exception as e:
+            logger.error(f"Error verifying password: {str(e)}")
+            cur.close()
+            conn.close()
             return {
-                "id": user[0],
-                "username": user[1],
-                "email": user[2],
-                "full_name": user[3],
-                "phone_number": user[4],
-                "user_type": user[5],
-                "role": user[6],
-                "is_active": user[7],
-                "is_verified": user[8],
-                "created_at": user[9].isoformat() if user[9] else None,
-                "last_login": user[10].isoformat() if user[10] else None
+                "status": "error",
+                "message": "Authentication failed"
             }
-        except Exception as e:
-            print(f"Error fetching user: {str(e)}")
-            return None
-    
-    def verify_user_email(self, user_id: int) -> bool:
-        """Mark user's email as verified"""
-        try:
-            self.cur.execute("""
-                UPDATE users SET is_verified = TRUE
-                WHERE id = %s;
-            """, (user_id,))
-            self.conn.commit()
-            return True
-        except Exception as e:
-            self.conn.rollback()
-            print(f"Error verifying user: {str(e)}")
-            return False
-    
-    def change_password(self, user_id: int, old_password: str, 
-                       new_password: str) -> bool:
-        """Change user password"""
-        try:
-            # Get current password hash
-            self.cur.execute("""
-                SELECT password_hash FROM users WHERE id = %s;
-            """, (user_id,))
-            
-            result = self.cur.fetchone()
-            if not result:
-                return False
-            
-            # Verify old password
-            if not AuthService.verify_password(old_password, result[0]):
-                return False
-            
-            # Update with new password
-            new_password_hash = AuthService.hash_password(new_password)
-            self.cur.execute("""
-                UPDATE users SET password_hash = %s, updated_at = CURRENT_TIMESTAMP
-                WHERE id = %s;
-            """, (new_password_hash, user_id))
-            self.conn.commit()
-            return True
-        except Exception as e:
-            self.conn.rollback()
-            print(f"Error changing password: {str(e)}")
-            return False
-    
-    def deactivate_user(self, user_id: int) -> bool:
-        """Deactivate a user account"""
-        try:
-            self.cur.execute("""
-                UPDATE users SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP
-                WHERE id = %s;
-            """, (user_id,))
-            self.conn.commit()
-            return True
-        except Exception as e:
-            self.conn.rollback()
-            print(f"Error deactivating user: {str(e)}")
-            return False
+
+        # 5. Generate JWT token with company_id for multi-tenant isolation
+        token_data = {
+            "sub": str(hse_id),
+            "id": hse_id,
+            "username": username,
+            "full_name": full_name,
+            "company_id": company_id,  # Critical for multi-tenant security
+            "company_code": company_code,
+            "company_name": company_name,
+            "user_type": "hse",
+            "role": role,
+            "email": email
+        }
+
+        access_token = AuthService.create_access_token(token_data)
+
+        # 6. Update last login
+        cur.execute("""
+            UPDATE hse_users
+            SET last_login = CURRENT_TIMESTAMP
+            WHERE id = %s;
+        """, (hse_id,))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        logger.info(f"✅ HSE user authenticated successfully: {username} @ {company_code}")
+
+        return {
+            "status": "success",
+            "message": "Authentication successful",
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": {
+                "id": hse_id,
+                "username": username,
+                "full_name": full_name,
+                "email": email,
+                "role": role,
+                "company_id": company_id,
+                "company_code": company_code,
+                "company_name": company_name,
+                "industry_type": industry_type,
+                "user_type": "hse"
+            }
+        }
+
+    except Exception as e:
+        logger.error(f"HSE authentication error: {str(e)}")
+        return {
+            "status": "error",
+            "message": f"Authentication failed: {str(e)}"
+        }
 
 
-def get_current_user_from_token(token: str, db_connection) -> Optional[Dict[str, Any]]:
+def get_current_user_from_token(token: str) -> Optional[Dict[str, Any]]:
     """
     Extract and verify user from JWT token
-    Returns user data if valid, None otherwise
+    Returns user data with company_id if valid, None otherwise
     """
     payload = AuthService.verify_token(token)
     if not payload:
         return None
-    
-    user_service = UserService(db_connection)
-    user = user_service.get_user_by_id(payload.get("user_id"))
-    return user
 
+    # Token must contain company_id for multi-tenant security
+    if 'company_id' not in payload:
+        logger.warning("Token missing company_id - invalid for multi-tenant system")
+        return None
+
+    return payload
+
+
+def validate_company_access(token: str, required_company_id: int) -> bool:
+    """
+    Validate that the token's company_id matches the required company_id
+    Critical security check for multi-tenant data isolation
+
+    Args:
+        token: JWT token
+        required_company_id: The company_id being accessed
+
+    Returns:
+        True if access is allowed, False otherwise
+    """
+    user = get_current_user_from_token(token)
+    if not user:
+        return False
+
+    token_company_id = user.get('company_id')
+    if token_company_id != required_company_id:
+        logger.warning(f"Company access violation: token company_id={token_company_id}, required={required_company_id}")
+        return False
+
+    return True
+
+
+def extract_token_from_header(authorization: str) -> Optional[str]:
+    """
+    Extract JWT token from Authorization header
+    Format: "Bearer <token>"
+    """
+    if not authorization:
+        return None
+
+    parts = authorization.split()
+    if len(parts) != 2 or parts[0].lower() != 'bearer':
+        return None
+
+    return parts[1]

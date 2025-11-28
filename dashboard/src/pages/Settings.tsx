@@ -14,6 +14,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { mediaCacheService } from "@/services/mediaCacheService";
 import { persistentMediaCache } from "@/services/persistentMediaCache";
 import { UsersResponse, fetchUsers } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Edit,
   Trash2,
@@ -44,6 +45,8 @@ interface DashboardUser {
   is_active: boolean;
   last_login: string | null;
   created_at: string;
+  company_code?: string;
+  company_name?: string;
 }
 
 type MemStats = {
@@ -80,6 +83,7 @@ const Settings = () => {
   const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
   const [editPasswordErrors, setEditPasswordErrors] = useState<string[]>([]);
   const { t } = useLanguage();
+  const { user: authUser, token } = useAuth();
 
   const [editUser, setEditUser] = useState<DashboardUser | null>(null);
   const [editUserModalOpen, setEditUserModalOpen] = useState(false);
@@ -95,7 +99,16 @@ const Settings = () => {
     setIsLoadingUsers(true);
     try {
       const data = await fetchUsers();
-      setUsersData(data);
+      const scopedUsers = authUser?.company_code
+        ? data.dashboard_users.filter(u => !u.company_code || u.company_code === authUser.company_code)
+        : data.dashboard_users;
+
+      setUsersData({
+        ...data,
+        dashboard_users: scopedUsers,
+        total_dashboard_users: scopedUsers.length,
+        active_dashboard_users: scopedUsers.filter(u => u.is_active).length,
+      });
     } catch (error) {
       console.error('Error loading users data:', error);
     } finally {
@@ -134,7 +147,7 @@ const Settings = () => {
   useEffect(() => {
     loadCacheStats();
     loadUsersData();
-  }, []);
+  }, [authUser?.company_code]);
 
   const handleClearMemoryCache = () => {
     mediaCacheService.clearAll();
@@ -207,7 +220,10 @@ const Settings = () => {
 
       const res = await fetch("http://localhost:8000/api/dashboard/users", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(newUser),
       });
       const data = await res.json();
@@ -261,7 +277,10 @@ const Settings = () => {
 
       const res = await fetch(`http://localhost:8000/api/dashboard/users/${editUser.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(updateData),
       });
       const data = await res.json();
@@ -288,6 +307,9 @@ const Settings = () => {
     try {
       const res = await fetch(`http://localhost:8000/api/dashboard/users/${deleteUserId}`, {
         method: "DELETE",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
       });
       const data = await res.json();
       if (!res.ok || data.status !== "success") {
@@ -312,31 +334,54 @@ const Settings = () => {
         <div className="h-full overflow-y-auto">
           <div className="container mx-auto p-6 space-y-6 max-w-7xl">
             {/* Header */}
-            <div className="space-y-2">
-              <h1 className="text-3xl font-bold text-foreground">{t('settings.title')}</h1>
-              <p className="text-muted-foreground">{t('settings.subtitle')}</p>
+            <div className="bg-gradient-to-r from-card to-card-accent border border-[hsl(215,20%,35%)] p-6 rounded-xl shadow-lg relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-[hsl(20,100%,63%)]/5 to-transparent pointer-events-none" />
+              <div className="relative flex items-center gap-3">
+                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-[hsl(20,100%,63%)] to-[hsl(22,96%,62%)] flex items-center justify-center shadow-lg shadow-[hsl(20,100%,63%)]/30">
+                  <SettingsIcon className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-foreground">{t('settings.title')}</h1>
+                  <p className="text-[hsl(214,20%,76%)] mt-1">{t('settings.subtitle')}</p>
+                </div>
+              </div>
             </div>
 
             {/* Tabs */}
             <Tabs defaultValue="users" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
-                <TabsTrigger value="users" className="flex items-center gap-2">
+              <TabsList className="grid w-full grid-cols-5 bg-card-accent/50 border border-[hsl(215,20%,35%)] p-1 h-auto">
+                <TabsTrigger
+                  value="users"
+                  className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-[hsl(20,100%,63%)] data-[state=active]:to-[hsl(22,96%,62%)] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-[hsl(20,100%,63%)]/30 transition-all duration-200 py-3"
+                >
                   <Users className="h-4 w-4" />
                   {t('settings.userManagement')}
                 </TabsTrigger>
-                <TabsTrigger value="alerts" className="flex items-center gap-2">
-                  <SettingsIcon className="h-4 w-4" />
+                <TabsTrigger
+                  value="alerts"
+                  className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-[hsl(20,100%,63%)] data-[state=active]:to-[hsl(22,96%,62%)] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-[hsl(20,100%,63%)]/30 transition-all duration-200 py-3"
+                >
+                  <Bell className="h-4 w-4" />
                   {t('settings.alertSettings')}
                 </TabsTrigger>
-                <TabsTrigger value="notifications" className="flex items-center gap-2">
+                <TabsTrigger
+                  value="notifications"
+                  className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-[hsl(20,100%,63%)] data-[state=active]:to-[hsl(22,96%,62%)] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-[hsl(20,100%,63%)]/30 transition-all duration-200 py-3"
+                >
                   <Bell className="h-4 w-4" />
                   {t('settings.notifications')}
                 </TabsTrigger>
-                <TabsTrigger value="system" className="flex items-center gap-2">
+                <TabsTrigger
+                  value="system"
+                  className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-[hsl(20,100%,63%)] data-[state=active]:to-[hsl(22,96%,62%)] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-[hsl(20,100%,63%)]/30 transition-all duration-200 py-3"
+                >
                   <Shield className="h-4 w-4" />
                   {t('settings.systemConfig')}
                 </TabsTrigger>
-                <TabsTrigger value="cache" className="flex items-center gap-2">
+                <TabsTrigger
+                  value="cache"
+                  className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-[hsl(20,100%,63%)] data-[state=active]:to-[hsl(22,96%,62%)] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-[hsl(20,100%,63%)]/30 transition-all duration-200 py-3"
+                >
                   <Database className="h-4 w-4" />
                   Cache
                 </TabsTrigger>
@@ -344,8 +389,8 @@ const Settings = () => {
 
               {/* User Management Tab */}
               <TabsContent value="users" className="space-y-6">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
+                <Card className="border-[hsl(215,20%,35%)] shadow-lg">
+                  <CardHeader className="flex flex-row items-center justify-between bg-card-accent/30 border-b border-[hsl(215,20%,35%)]">
                     <div>
                       <CardTitle>{t('settings.userManagementTitle')}</CardTitle>
                       <CardDescription>

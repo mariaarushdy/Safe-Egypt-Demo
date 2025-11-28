@@ -4,14 +4,10 @@ import {
   AlertTriangle, 
   Flame, 
   Clock, 
-  Users, 
   Car,
-  Zap,
-  UserX,
   MapPin,
-  Filter,
-  Shield,
-  Wrench
+  Wrench,
+  HardHat
 } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import GoogleMapWrapper from "@/components/GoogleMapWrapper";
@@ -19,18 +15,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { 
-  fetchIncidents, 
+import {
+  fetchIncidents,
   fetchIncidentDetail,
-  calculateDashboardStats, 
-  getSeverityMapColor,
-  mapCategory,
+  calculateDashboardStats,
   type Incident,
-  type DashboardStats 
+  type DashboardStats
 } from "@/lib/api";
 import { mediaCacheService } from "@/services/mediaCacheService";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Helper function to get time ago from timestamp
 const getTimeAgo = (timestamp: string, t: (key: string) => string): string => {
@@ -46,19 +42,22 @@ const getTimeAgo = (timestamp: string, t: (key: string) => string): string => {
   return `${diffInDays} ${diffInDays === 1 ? t('dashboard.dayAgo') : t('dashboard.daysAgo')}`;
 };
 
-// Define incident categories based on API
+// Helper function to get petroleum type count
+const getIncidentCountByType = (incidents: Incident[], petroleumType: string) =>
+  incidents.filter(incident =>
+    (incident.petroleum_type || '').toLowerCase() === petroleumType.toLowerCase()
+  ).length;
+
+// Define petroleum incident types based on petroleum_type field
 const getIncidentTypes = (incidents: Incident[], t: (key: string) => string) => {
-  const violenceCount = incidents.filter(i => i.category.toLowerCase() === 'violence').length;
-  const accidentsCount = incidents.filter(i => i.category.toLowerCase() === 'accidents').length;
-  const utilityCount = incidents.filter(i => i.category.toLowerCase() === 'utility').length;
-  const illegalCount = incidents.filter(i => i.category.toLowerCase() === 'illegal').length;
-  
   return {
     all: { label: t('dashboard.all'), count: incidents.length },
-    violence: { label: t('dashboard.violence'), count: violenceCount, icon: UserX },
-    accidents: { label: t('dashboard.accidents'), count: accidentsCount, icon: Car },
-    utility: { label: t('dashboard.utility'), count: utilityCount, icon: Wrench },
-    illegal: { label: t('dashboard.illegal'), count: illegalCount, icon: Shield }
+    'equipment damage': { label: 'Equipment Damage', count: getIncidentCountByType(incidents, 'equipment damage'), icon: Car },
+    'spill/leak': { label: 'Spill/Leak', count: getIncidentCountByType(incidents, 'spill/leak'), icon: Flame },
+    'PPE violation': { label: 'PPE Violation', count: getIncidentCountByType(incidents, 'PPE violation'), icon: HardHat },
+    'safety violation': { label: 'Safety Violation', count: getIncidentCountByType(incidents, 'safety violation'), icon: AlertTriangle },
+    'fire/explosion': { label: 'Fire/Explosion', count: getIncidentCountByType(incidents, 'fire/explosion'), icon: Flame },
+    'environmental hazard': { label: 'Environmental', count: getIncidentCountByType(incidents, 'environmental hazard'), icon: Wrench },
   };
 };
 
@@ -66,6 +65,8 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState<string>("all");
+  const [siteFilter, setSiteFilter] = useState<string>("all");
+  const [severityFilter, setSeverityFilter] = useState<string>("all");
   const [selectedIncident, setSelectedIncident] = useState<string | null>(null);
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
@@ -76,6 +77,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { t } = useLanguage();
+  const { user } = useAuth();
 
   // Fetch incidents data on component mount
   useEffect(() => {
@@ -136,18 +138,18 @@ const Dashboard = () => {
     navigate(`/incident/${incidentId}`);
   };
 
-  const getIncidentIcon = (category: string) => {
-    switch (category.toLowerCase()) {
-      case "violence": return UserX;
-      case "accidents": return Car;
-      case "utility": return Wrench;
-      case "illegal": return Shield;
-      default: return AlertTriangle;
-    }
+  const getIncidentIcon = (incident: Incident) => {
+    const type = (incident.petroleum_type || incident.category || '').toLowerCase();
+    if (type.includes('equipment')) return Car;
+    if (type.includes('spill') || type.includes('leak') || type.includes('fire') || type.includes('explosion')) return Flame;
+    if (type.includes('ppe')) return HardHat;
+    if (type.includes('safety') || type.includes('environmental')) return Wrench;
+    return AlertTriangle;
   };
 
   const getSeverityStyles = (severity: string) => {
-    switch (severity.toLowerCase()) {
+    const normalized = (severity || '').toLowerCase();
+    switch (normalized) {
       case "high": return {
         bg: "bg-red-500/10",
         text: "text-red-500",
@@ -172,7 +174,8 @@ const Dashboard = () => {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
+    const normalized = (status || '').toLowerCase();
+    switch (normalized) {
       case "pending": return "bg-yellow-500";
       case "reviewed": return "bg-blue-500";
       case "resolved": return "bg-green-500";
@@ -181,10 +184,31 @@ const Dashboard = () => {
   };
 
   const incidentTypes = getIncidentTypes(incidents, t);
-  
-  const filteredIncidents = selectedFilter === "all" 
-    ? incidents 
-    : incidents.filter(incident => incident.category.toLowerCase() === selectedFilter);
+  const siteOptions = Array.from(
+    new Map(
+      incidents.map((incident) => {
+        const value = incident.site_id ? String(incident.site_id) : (incident.site_name || incident.site_code || '');
+        const label = incident.site_name || incident.site_code || incident.site_address || 'Site';
+        return [value || label, { value: value || label, label }];
+      })
+    ).values()
+  ).filter(option => option.value);
+
+  const filteredIncidents = incidents.filter((incident) => {
+    const petroleumType = (incident.petroleum_type || incident.category || '').toLowerCase();
+    const severity = incident.severity?.toLowerCase() || '';
+    const siteId = incident.site_id ? String(incident.site_id) : (incident.site_name || incident.site_code || '');
+
+    const matchesCategory = (() => {
+      if (selectedFilter === "all") return true;
+      return petroleumType === selectedFilter.toLowerCase();
+    })();
+
+    const matchesSite = siteFilter === "all" ? true : siteFilter === siteId;
+    const matchesSeverity = severityFilter === "all" ? true : severity === severityFilter;
+    return matchesCategory && matchesSite && matchesSeverity;
+  });
+  const glassCard = "bg-card/80 border-[hsl(215,20%,35%)] backdrop-blur-xl shadow-xl";
 
   return (
     <div className="min-h-screen bg-background flex w-full">
@@ -196,54 +220,93 @@ const Dashboard = () => {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Main Content */}
         <main className="flex-1 p-6 space-y-6 overflow-y-auto">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-sm text-muted-foreground">{t('dashboard.companyScope')}</p>
+              <p className="text-lg font-semibold text-foreground">
+                {user?.company_name || t('dashboard.title')}
+                {user?.company_code ? ` • ${user.company_code}` : ""}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Select value={siteFilter} onValueChange={setSiteFilter}>
+                <SelectTrigger className="w-52">
+                  <SelectValue placeholder={t('dashboard.filterBySite')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('dashboard.allSites')}</SelectItem>
+                  {siteOptions.map((site) => (
+                    <SelectItem key={site.value} value={site.value}>
+                      {site.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={severityFilter} onValueChange={setSeverityFilter}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder={t('dashboard.filterBySeverity')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('dashboard.allSeverities')}</SelectItem>
+                  <SelectItem value="high">{t('reports.high')}</SelectItem>
+                  <SelectItem value="medium">{t('reports.medium')}</SelectItem>
+                  <SelectItem value="low">{t('reports.low')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           {/* Top Statistics Bar */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Active Reports */}
-            <Card className="bg-slate-800 border-slate-700">
-              <CardContent className="p-6">
+            <Card className={cn(glassCard, "relative overflow-hidden")}>
+              <div className="absolute inset-0 bg-gradient-to-br from-[hsl(20,100%,63%)]/10 to-transparent" />
+              <CardContent className="p-6 relative">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-300">{t('dashboard.activeReports')}</p>
-                    <p className="text-3xl font-bold text-white">
+                    <p className="text-sm font-medium text-[hsl(214,20%,76%)]">{t('dashboard.activeReports')}</p>
+                    <p className="text-4xl font-bold text-white mt-2">
                       {loading ? "..." : dashboardStats.activeReports}
                     </p>
                   </div>
-                  <div className="p-3 bg-blue-500/10 rounded-full">
-                    <AlertTriangle className="h-6 w-6 text-blue-500" />
+                  <div className="p-4 bg-gradient-to-br from-[hsl(20,100%,63%)]/20 to-[hsl(22,96%,62%)]/10 rounded-xl border border-[hsl(20,100%,63%)]/30 shadow-lg shadow-[hsl(20,100%,63%)]/20">
+                    <AlertTriangle className="h-7 w-7 text-[hsl(20,100%,63%)]" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* High-Risk Alerts */}
-            <Card className="bg-slate-800 border-slate-700">
-              <CardContent className="p-6">
+            <Card className={cn(glassCard, "relative overflow-hidden")}>
+              <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent" />
+              <CardContent className="p-6 relative">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-300">{t('dashboard.highRiskAlerts')}</p>
-                    <p className="text-3xl font-bold text-white">
+                    <p className="text-sm font-medium text-[hsl(214,20%,76%)]">{t('dashboard.highRiskAlerts')}</p>
+                    <p className="text-4xl font-bold text-white mt-2">
                       {loading ? "..." : dashboardStats.highRiskAlerts}
                     </p>
                   </div>
-                  <div className="p-3 bg-red-500/10 rounded-full">
-                    <Flame className="h-6 w-6 text-red-500" />
+                  <div className="p-4 bg-gradient-to-br from-red-500/20 to-red-600/10 rounded-xl border border-red-500/30 shadow-lg shadow-red-500/20">
+                    <Flame className="h-7 w-7 text-red-500" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* Pending Actions */}
-            <Card className="bg-slate-800 border-slate-700">
-              <CardContent className="p-6">
+            <Card className={cn(glassCard, "relative overflow-hidden")}>
+              <div className="absolute inset-0 bg-gradient-to-br from-[hsl(45,96%,69%)]/10 to-transparent" />
+              <CardContent className="p-6 relative">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-300">{t('dashboard.pendingActions')}</p>
-                    <p className="text-3xl font-bold text-white">
+                    <p className="text-sm font-medium text-[hsl(214,20%,76%)]">{t('dashboard.pendingActions')}</p>
+                    <p className="text-4xl font-bold text-white mt-2">
                       {loading ? "..." : dashboardStats.pendingActions}
                     </p>
                   </div>
-                  <div className="p-3 bg-yellow-500/10 rounded-full">
-                    <Clock className="h-6 w-6 text-yellow-500" />
+                  <div className="p-4 bg-gradient-to-br from-[hsl(45,96%,69%)]/20 to-yellow-600/10 rounded-xl border border-[hsl(45,96%,69%)]/30 shadow-lg shadow-[hsl(45,96%,69%)]/20">
+                    <Clock className="h-7 w-7 text-[hsl(45,96%,69%)]" />
                   </div>
                 </div>
               </CardContent>
@@ -255,7 +318,7 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[600px]">
             {/* Live Incident Map (2/3 width) */}
             <div className="lg:col-span-2">
-              <Card className="h-full">
+              <Card className={cn("h-full", glassCard)}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <MapPin className="h-5 w-5" />
@@ -266,25 +329,25 @@ const Dashboard = () => {
                   <GoogleMapWrapper
                     incidents={incidents}
                     onIncidentClick={handleIncidentClick}
-                    className="w-full h-full rounded-lg border border-slate-700"
+                    className="w-full h-full rounded-lg border border-white/20"
                   />
                   
                   {/* Map Legend */}
-                  <div className="absolute bottom-4 left-4 bg-slate-800/90 backdrop-blur-sm rounded-lg p-3 space-y-2 border border-slate-700">
-                    <div className="flex items-center gap-2 text-xs text-slate-300">
-                      <div className="w-3 h-3 bg-red-500 rounded-full" />
+                  <div className="absolute bottom-4 left-4 bg-card/90 backdrop-blur-xl rounded-xl p-4 space-y-2.5 border border-[hsl(215,20%,35%)] shadow-xl text-white">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <div className="w-3 h-3 bg-red-500 rounded-full shadow-lg shadow-red-500/50" />
                       <span>{t('dashboard.highPriority')}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-slate-300">
-                      <div className="w-3 h-3 bg-orange-500 rounded-full" />
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <div className="w-3 h-3 bg-orange-500 rounded-full shadow-lg shadow-orange-500/50" />
                       <span>{t('dashboard.mediumPriority')}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-slate-300">
-                      <div className="w-3 h-3 bg-yellow-500 rounded-full" />
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <div className="w-3 h-3 bg-[hsl(45,96%,69%)] rounded-full shadow-lg shadow-[hsl(45,96%,69%)]/50" />
                       <span>{t('dashboard.lowPriority')}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-slate-300">
-                      <div className="w-3 h-3 bg-green-500 rounded-full" />
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <div className="w-3 h-3 bg-green-500 rounded-full shadow-lg shadow-green-500/50" />
                       <span>{t('dashboard.resolved')}</span>
                     </div>
                   </div>
@@ -294,7 +357,7 @@ const Dashboard = () => {
 
             {/* Live Alerts Feed (1/3 width) */}
             <div className="lg:col-span-1">
-              <Card className="h-full">
+              <Card className={cn("h-full", glassCard)}>
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center gap-2">
                     <AlertTriangle className="h-5 w-5" />
@@ -309,12 +372,25 @@ const Dashboard = () => {
                         variant={selectedFilter === key ? "default" : "outline"}
                         size="sm"
                         onClick={() => setSelectedFilter(key)}
-                        className="text-xs flex items-center gap-1"
+                        className={cn(
+                          "text-xs flex items-center gap-1.5 transition-all duration-200",
+                          selectedFilter === key
+                            ? "bg-gradient-to-r from-[hsl(20,100%,63%)] to-[hsl(22,96%,62%)] text-white shadow-lg shadow-[hsl(20,100%,63%)]/30 border-transparent hover:shadow-xl"
+                            : "hover:bg-sidebar-accent hover:border-[hsl(20,100%,63%)]/50"
+                        )}
                         disabled={loading}
                       >
-                        {key !== "all" && "icon" in type && type.icon && <type.icon className="h-3 w-3" />}
-                        {type.label}
-                        <Badge variant="secondary" className="ml-1 text-xs">
+                        {key !== "all" && "icon" in type && type.icon && <type.icon className="h-3.5 w-3.5" />}
+                        <span className="font-medium">{type.label}</span>
+                        <Badge
+                          variant="secondary"
+                          className={cn(
+                            "ml-1 text-xs font-bold",
+                            selectedFilter === key
+                              ? "bg-white/20 text-white border-white/30"
+                              : "bg-card border-border"
+                          )}
+                        >
                           {type.count}
                         </Badge>
                       </Button>
@@ -339,26 +415,33 @@ const Dashboard = () => {
                         </div>
                       ) : (
                         filteredIncidents.map((incident) => {
-                          const IconComponent = getIncidentIcon(incident.category);
+                          const IconComponent = getIncidentIcon(incident);
                           const severityStyles = getSeverityStyles(incident.severity);
                           const isSelected = selectedIncident === incident.incident_id;
-                          
+                          const isHighSeverity = incident.severity?.toLowerCase() === 'high';
+
                           return (
                             <div
                               key={incident.incident_id}
                               onClick={() => handleIncidentClick(incident.incident_id)}
                               className={cn(
-                                "p-4 rounded-lg border cursor-pointer transition-all duration-200 hover:bg-card/50",
-                                isSelected && "border-primary bg-card/50",
+                                "p-4 rounded-xl border cursor-pointer transition-all duration-200 hover:shadow-lg relative group",
+                                "hover:border-[hsl(20,100%,63%)]/50 hover:bg-card/70",
+                                isSelected && "border-[hsl(20,100%,63%)] bg-card/70 shadow-lg shadow-[hsl(20,100%,63%)]/20",
+                                isHighSeverity && "border-red-500/30",
                                 severityStyles.border
                               )}
                             >
-                              <div className="flex items-start gap-3">
+                              {isHighSeverity && (
+                                <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 to-transparent rounded-xl pointer-events-none" />
+                              )}
+                              <div className="flex items-start gap-3 relative">
                                 <div className={cn(
-                                  "p-2 rounded-full flex-shrink-0",
-                                  severityStyles.bg
+                                  "p-2.5 rounded-xl flex-shrink-0 transition-all duration-200 group-hover:scale-110",
+                                  severityStyles.bg,
+                                  isHighSeverity && "shadow-lg shadow-red-500/30"
                                 )}>
-                                  <IconComponent className={cn("h-4 w-4", severityStyles.text)} />
+                                  <IconComponent className={cn("h-5 w-5", severityStyles.text)} />
                                 </div>
                                 
                                 <div className="flex-1 space-y-2 min-w-0">
@@ -374,7 +457,10 @@ const Dashboard = () => {
                                   
                                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                     <MapPin className="h-3 w-3 flex-shrink-0" />
-                                    <span className="truncate">{incident.location.address}</span>
+                                    <span className="truncate">
+                                      {incident.site_name || incident.location.address}
+                                      {incident.zone_name ? ` • ${incident.zone_name}` : ""}
+                                    </span>
                                   </div>
                                   
                                   <div className="flex items-center justify-between text-xs">
